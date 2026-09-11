@@ -223,24 +223,7 @@ export function HomeNativeScreen({ navigation }: Props) {
             ) : null}
           </View>
 
-          <View style={styles.readinessCard}>
-            <AppText style={styles.heroTitle}>
-              {totalExams ? t('home.keepMomentum') : t('home.startJourney')}
-            </AppText>
-            <AppText style={styles.heroBody}>
-              {totalExams ? t('home.progressBody', { count: totalExams }) : t('home.startJourneyBody')}
-            </AppText>
-            <View style={styles.bannerStats}>
-              <View style={styles.bannerPill}>
-                <AppText style={styles.bannerPillText}>{t('performance.totalExams')}: </AppText>
-                {loading ? <SkeletonBlock style={{ width: 16, height: 12, borderRadius: 2, marginLeft: 4, backgroundColor: 'rgba(255,255,255,0.4)' }} /> : <AppText style={styles.bannerPillText}>{totalExams}</AppText>}
-              </View>
-              <View style={styles.bannerPill}>
-                <AppText style={styles.bannerPillText}>{t('performance.successRate')}: </AppText>
-                {loading ? <SkeletonBlock style={{ width: 20, height: 12, borderRadius: 2, marginLeft: 4, backgroundColor: 'rgba(255,255,255,0.4)' }} /> : <AppText style={styles.bannerPillText}>{`${successRate}%`}</AppText>}
-              </View>
-            </View>
-          </View>
+
 
           <View style={styles.metricStrip}>
             <View style={styles.metric}>

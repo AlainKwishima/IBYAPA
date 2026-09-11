@@ -21,7 +21,13 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#fbf8fd"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "transparent",
+      "translucent": true
     },
     "web": {
       "favicon": "./assets/favicon.png",

@@ -206,14 +206,7 @@ function StatTile({
 function PerformanceSummarySkeleton() {
   return (
     <View style={styles.summaryContainer}>
-      <View style={[styles.performanceBanner, { paddingVertical: 24 }]}>
-        <SkeletonBlock style={{ width: '50%', height: 20, borderRadius: 6, marginBottom: 8 }} />
-        <SkeletonBlock style={{ width: '70%', height: 14, borderRadius: 4, marginBottom: 16 }} />
-        <View style={styles.performanceBannerStats}>
-          <SkeletonBlock style={{ width: 100, height: 28, borderRadius: radii.pill }} />
-          <SkeletonBlock style={{ width: 110, height: 28, borderRadius: radii.pill }} />
-        </View>
-      </View>
+
       <View style={styles.summaryGrid}>
         {Array.from({ length: 4 }).map((_, i) => (
           <View key={i} style={styles.statTile}>
@@ -263,22 +256,7 @@ function PerformanceSummary({ rows }: { rows: PerformanceHistoryRow[] }) {
 
   return (
     <View style={styles.summaryContainer}>
-      <View style={styles.performanceBanner}>
-        <AppText style={styles.performanceBannerTitle}>{t('performance.bannerTitle')}</AppText>
-        <AppText style={styles.performanceBannerBody}>{t('performance.bannerSubtitle')}</AppText>
-        <View style={styles.performanceBannerStats}>
-          <View style={styles.performanceBannerPill}>
-            <AppText style={styles.performanceBannerPillText}>
-              {t('performance.totalExams')}: {total}
-            </AppText>
-          </View>
-          <View style={styles.performanceBannerPill}>
-            <AppText style={styles.performanceBannerPillText}>
-              {t('performance.successRate')}: {successRate}%
-            </AppText>
-          </View>
-        </View>
-      </View>
+
 
       <View style={styles.summaryGrid}>
         <StatTile label={t('performance.avgAccuracy')} value={`${avgAccuracy}%`} tone={avgAccuracy >= 60 ? 'positive' : 'negative'} />

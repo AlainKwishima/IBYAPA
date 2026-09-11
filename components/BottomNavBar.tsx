@@ -70,7 +70,7 @@ export function BottomNavBar({ navigation, active, onPressTab }: BottomNavBarPro
   const iconSize = scale(isCompact ? 20 : 22);
   const labelSize = font(isCompact ? 9 : isWidePhone ? 11 : 10, 0.25);
   const horizontalInset = scale(isCompact ? 8 : 14);
-  const bottomPadding = insets.bottom;
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 4 : 0);
   const navLayerHeight = bottomPadding + verticalScale(68);
   const languageAccessGranted = hasLanguageAccess({
     hasSubscription,
@@ -111,8 +111,10 @@ export function BottomNavBar({ navigation, active, onPressTab }: BottomNavBarPro
     }
   };
 
+  if (keyboardHeight > 0 && Platform.OS === 'android') return null;
+
   return (
-    <View pointerEvents="box-none" style={[styles.navLayer, { height: navLayerHeight, transform: [{ translateY: Platform.OS === 'android' ? keyboardHeight : 0 }] }]} >
+    <View pointerEvents="box-none" style={[styles.navLayer, { height: navLayerHeight }]} >
       <View
         style={[
           styles.tabs,

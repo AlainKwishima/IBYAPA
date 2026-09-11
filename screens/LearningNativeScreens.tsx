@@ -1,6 +1,6 @@
 import { AppText } from '../components/AppText';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Alert, Image, Linking, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -393,15 +393,23 @@ export function ReadingNativeScreen({ navigation, route }: ReadProps) {
   const activeSearchPlaceholder = activeTab === 'documents' ? t('reading.searchDocuments') : t('reading.searchRoadSigns');
   const selectedRoadSign = selectedRoadSignIndex === null ? null : roadSigns[selectedRoadSignIndex] ?? null;
 
+  const queryClient = useQueryClient();
+
   const markRoadSignAsViewed = useCallback(
     (item: RoadSignStudyItem | undefined) => {
       if (!accessToken || !item || item.viewed) return;
-      setRoadSigns((current) => current.map((sign) => (sign.id === item.id ? { ...sign, viewed: true } : sign)));
+      queryClient.setQueryData(['roadSigns', accessToken, paidContentLanguage], (current: { items: RoadSignStudyItem[] } | undefined) => {
+        if (!current) return current;
+        return { ...current, items: current.items.map((sign) => (sign.id === item.id ? { ...sign, viewed: true } : sign)) };
+      });
       void markRoadSignViewed(accessToken, item.id).catch(() => {
-        setRoadSigns((current) => current.map((sign) => (sign.id === item.id ? { ...sign, viewed: false } : sign)));
+        queryClient.setQueryData(['roadSigns', accessToken, paidContentLanguage], (current: { items: RoadSignStudyItem[] } | undefined) => {
+          if (!current) return current;
+          return { ...current, items: current.items.map((sign) => (sign.id === item.id ? { ...sign, viewed: false } : sign)) };
+        });
       });
     },
-    [accessToken],
+    [accessToken, paidContentLanguage, queryClient],
   );
 
   const openRoadSign = useCallback(
