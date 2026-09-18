@@ -36,7 +36,6 @@ export type ExamResultParams = {
 };
 
 export type RootStackParamList = {
-  Splash: undefined;
   LanguageSelection: { changeOnly?: boolean } | undefined;
   LanguageSettings: undefined;
   Login: { prefill?: { phone?: string; name?: string }; showSignupSuccess?: boolean } | undefined;

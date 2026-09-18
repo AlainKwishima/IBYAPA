@@ -4,6 +4,10 @@ import { createNativeStackNavigator, type NativeStackNavigationOptions } from '@
 import { Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync();
+
 import {
   useFonts,
   Poppins_400Regular,
@@ -35,10 +39,9 @@ import { TestFailedNativeScreen, TestPassedNativeScreen } from './screens/TestRe
 import { VideoCourseListScreen } from './screens/VideoCourseListScreen';
 import { VideoCoursePlayerScreen } from './screens/VideoCoursePlayerScreen';
 import { PdfViewerScreen } from './screens/PdfViewerScreen';
-import { SplashScreen } from './screens/SplashScreen';
 import { ReadingNativeScreen } from './screens/LearningNativeScreens';
-import { AppFlowProvider } from './context/AppFlowContext';
-import { AuthProvider } from './context/AuthContext';
+import { AppFlowProvider, useAppFlow } from './context/AppFlowContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { GateModalProvider } from './context/GateModalContext';
 import { NetworkStatusProvider } from './context/NetworkStatusContext';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -84,6 +87,65 @@ const mainTabScreenOptions: NativeStackNavigationOptions = {
   animation: 'none',
 };
 
+function RootNavigator() {
+  const { hydrated, hasChosenLanguage } = useAppFlow();
+  const { authReady, isSignedIn, accessToken } = useAuth();
+
+  React.useEffect(() => {
+    if (hydrated && authReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [hydrated, authReady]);
+
+  if (!hydrated || !authReady) {
+    return null;
+  }
+
+  let initialRouteName: keyof RootStackParamList = 'LanguageSelection';
+  if (hasChosenLanguage) {
+    if (!isSignedIn || !accessToken) {
+      initialRouteName = 'Login';
+    } else {
+      initialRouteName = 'HomeNative';
+    }
+  }
+
+  return (
+    <NavigationContainer theme={navTheme} ref={navigationRef}>
+      <Stack.Navigator screenOptions={stackScreenOptions} initialRouteName={initialRouteName}>
+        <Stack.Screen name="LanguageSelection" component={LanguageSelectionScreen} />
+        <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="CreateAccount" component={CreateAccountScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+        <Stack.Screen name="HomeNative" component={HomeNativeScreen} options={mainTabScreenOptions} />
+        <Stack.Screen name="ExamNative" component={ExamNativeScreen} />
+        <Stack.Screen name="ExamInstructionsNative" component={ExamInstructionsNativeScreen} options={mainTabScreenOptions} />
+        <Stack.Screen name="ExamTypeSelectNative" component={ExamTypeSelectNativeScreen} />
+        <Stack.Screen name="StartExamNative" component={StartExamNativeScreen} />
+        <Stack.Screen name="PracticeNoSelectedNative" component={PracticeNoSelectedNativeScreen} />
+        <Stack.Screen name="PracticeSelectedNative" component={PracticeSelectedNativeScreen} />
+        <Stack.Screen name="TestFailedNative" component={TestFailedNativeScreen} />
+        <Stack.Screen name="TestPassedNative" component={TestPassedNativeScreen} />
+        <Stack.Screen name="PerformanceNative" component={PerformanceNativeScreen} options={mainTabScreenOptions} />
+        <Stack.Screen name="PerformanceReviewNative" component={PerformanceReviewNativeScreen} />
+        <Stack.Screen name="ReadingNative" component={ReadingNativeScreen} options={mainTabScreenOptions} />
+        <Stack.Screen name="HelpCenterNative" component={HelpCenterNativeScreen} />
+        <Stack.Screen name="SubscriptionNative" component={SubscriptionNativeScreen} />
+        <Stack.Screen name="PaymentNative" component={PaymentNativeScreen} />
+        <Stack.Screen name="ProfileNative" component={ProfileNativeScreen} />
+        <Stack.Screen name="ScreensHub" component={ScreensHubScreen} />
+        <Stack.Screen name="ReferenceImage" component={ReferenceImageScreen} />
+        <Stack.Screen name="VideoCourseList" component={VideoCourseListScreen} options={mainTabScreenOptions} />
+        <Stack.Screen name="VideoCoursePlayer" component={VideoCoursePlayerScreen} />
+        <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
+        <Stack.Screen name="PdfViewer" component={PdfViewerScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     'Poppins-Regular': Poppins_400Regular,
@@ -94,13 +156,7 @@ export default function App() {
   });
 
   if (!fontsLoaded) {
-    return (
-      <View style={styles.loader}>
-        <SkeletonBlock style={styles.appSkeletonLogo} />
-        <SkeletonBlock style={styles.appSkeletonLine} />
-        <SkeletonBlock style={styles.appSkeletonLineShort} />
-      </View>
-    );
+    return null;
   }
 
   return (
@@ -114,39 +170,7 @@ export default function App() {
                 <FullScreenErrorBoundary>
                   <View style={styles.app}>
                     <OfflineBanner />
-                    <NavigationContainer theme={navTheme} ref={navigationRef}>
-                      <Stack.Navigator screenOptions={stackScreenOptions} initialRouteName="Splash">
-              <Stack.Screen name="Splash" component={SplashScreen} />
-              <Stack.Screen name="LanguageSelection" component={LanguageSelectionScreen} />
-              <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="CreateAccount" component={CreateAccountScreen} />
-              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-              <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-              <Stack.Screen name="HomeNative" component={HomeNativeScreen} options={mainTabScreenOptions} />
-              <Stack.Screen name="ExamNative" component={ExamNativeScreen} />
-              <Stack.Screen name="ExamInstructionsNative" component={ExamInstructionsNativeScreen} options={mainTabScreenOptions} />
-              <Stack.Screen name="ExamTypeSelectNative" component={ExamTypeSelectNativeScreen} />
-              <Stack.Screen name="StartExamNative" component={StartExamNativeScreen} />
-              <Stack.Screen name="PracticeNoSelectedNative" component={PracticeNoSelectedNativeScreen} />
-              <Stack.Screen name="PracticeSelectedNative" component={PracticeSelectedNativeScreen} />
-              <Stack.Screen name="TestFailedNative" component={TestFailedNativeScreen} />
-              <Stack.Screen name="TestPassedNative" component={TestPassedNativeScreen} />
-              <Stack.Screen name="PerformanceNative" component={PerformanceNativeScreen} options={mainTabScreenOptions} />
-              <Stack.Screen name="PerformanceReviewNative" component={PerformanceReviewNativeScreen} />
-              <Stack.Screen name="ReadingNative" component={ReadingNativeScreen} options={mainTabScreenOptions} />
-              <Stack.Screen name="HelpCenterNative" component={HelpCenterNativeScreen} />
-              <Stack.Screen name="SubscriptionNative" component={SubscriptionNativeScreen} />
-              <Stack.Screen name="PaymentNative" component={PaymentNativeScreen} />
-              <Stack.Screen name="ProfileNative" component={ProfileNativeScreen} />
-              <Stack.Screen name="ScreensHub" component={ScreensHubScreen} />
-              <Stack.Screen name="ReferenceImage" component={ReferenceImageScreen} />
-              <Stack.Screen name="VideoCourseList" component={VideoCourseListScreen} options={mainTabScreenOptions} />
-              <Stack.Screen name="VideoCoursePlayer" component={VideoCoursePlayerScreen} />
-              <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
-              <Stack.Screen name="PdfViewer" component={PdfViewerScreen} />
-                      </Stack.Navigator>
-                    </NavigationContainer>
+                    <RootNavigator />
                   </View>
                 </FullScreenErrorBoundary>
               </GateModalProvider>

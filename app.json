@@ -19,15 +19,20 @@
       "package": "com.ibyapa.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#fbf8fd"
+        "backgroundColor": "#F9FAFB"
       },
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize"
     },
     "androidStatusBar": {
-      "barStyle": "light-content",
+      "barStyle": "dark-content",
       "backgroundColor": "transparent",
       "translucent": true
+    },
+    "androidNavigationBar": {
+      "visible": "sticky-immersive",
+      "barStyle": "dark-content",
+      "backgroundColor": "#F9FAFB"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -37,7 +42,7 @@
       "lang": "en",
       "description": "Road safety learning and driving exam preparation.",
       "themeColor": "#4A78D0",
-      "backgroundColor": "#fbf8fd",
+      "backgroundColor": "#F9FAFB",
       "display": "standalone",
       "orientation": "any"
     },
@@ -51,7 +56,7 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#fbf8fd"
+          "backgroundColor": "#F9FAFB"
         }
       ]
     ]

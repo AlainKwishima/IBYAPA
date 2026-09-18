@@ -60,7 +60,6 @@ export function ScreensHubScreen({ navigation }: Props) {
             style={styles.card}
             onPress={() => {
               if (screen.key === 'splash') {
-                navigation.navigate('Splash');
                 return;
               }
               if (screen.key === 'languageSelection') {
