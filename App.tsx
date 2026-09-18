@@ -106,7 +106,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <AppFlowProvider>
           <NetworkStatusProvider>
             <AuthProvider>

@@ -175,6 +175,19 @@ export async function updateUserProfile(
   }
 }
 
+export async function deleteAccountProfile(userId: string, accessToken: string): Promise<unknown> {
+  const json = await apiRequest<unknown>(`/api/user/delete-user/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+    accessToken,
+    headers: { token: `Bearer ${accessToken}` },
+  });
+  try {
+    return unwrapApiPayload(json);
+  } catch {
+    return json;
+  }
+}
+
 /**
  * Checks whether an expiry date string/timestamp is in the future.
  * Returns true (still valid) for any value we can't parse — fail open.

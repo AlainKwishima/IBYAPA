@@ -11,19 +11,22 @@ type AuthButtonProps = {
   onPress: () => void;
   withArrow?: boolean;
   style?: ViewStyle;
+  disabled?: boolean;
 };
 
-export function AuthButton({ label, onPress, withArrow = false, style }: AuthButtonProps) {
+export function AuthButton({ label, onPress, withArrow = false, style, disabled = false }: AuthButtonProps) {
   const m = useMobile();
 
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       style={({ pressed }) => [
         styles.button,
         { height: m.touch(56), borderRadius: m.radius(28) },
         style,
-        pressed && styles.buttonPressed,
+        disabled && { opacity: 0.5 },
+        pressed && !disabled && styles.buttonPressed,
       ]}
     >
       <AppText style={[styles.label, { fontSize: m.fontScale(15), lineHeight: m.fontScale(20) }]}>{label}</AppText>

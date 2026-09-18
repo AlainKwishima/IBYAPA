@@ -3,7 +3,7 @@ import { SkeletonBlock } from '../components/RequestStates';
 import React, { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ActivityIndicator, Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 
@@ -637,6 +637,25 @@ export function SubscriptionNativeScreen({ navigation }: SubscriptionProps) {
   const pricingError = queryError ? getMessageFromUnknownError(queryError) : null;
   const [activePlanIndex, setActivePlanIndex] = useState(0);
   const planActionLabel = hasSubscription ? t('payment.renewOrChangePlan') : t('payment.startNow');
+
+  if (Platform.OS === 'ios') {
+    return (
+      <ScreenColumn>
+        <Header title={t('subscription.title')} onBack={() => navigation.goBack()} navigation={navigation} />
+        <View style={[styles.body, { justifyContent: 'center', paddingHorizontal: 32 }]}>
+          <Ionicons name="information-circle-outline" size={48} color={colors.inkMuted} style={{ alignSelf: 'center', marginBottom: 20 }} />
+          <AppText style={{ textAlign: 'center', fontSize: 16, color: colors.ink, fontFamily: 'Poppins-SemiBold' }}>
+            Subscription Available Online
+          </AppText>
+          <AppText style={{ textAlign: 'center', fontSize: 14, color: colors.inkMuted, marginTop: 12 }} lines={null}>
+            Due to App Store guidelines, purchasing digital subscriptions is not currently supported directly within the iOS app.
+            {'\n\n'}
+            Please visit our website at ibyapa.com on your web browser to view plans and manage your subscription.
+          </AppText>
+        </View>
+      </ScreenColumn>
+    );
+  }
 
   return (
     <ScreenColumn>

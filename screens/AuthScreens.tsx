@@ -134,6 +134,7 @@ export function LoginScreen({ navigation, route }: LoginProps) {
         style={{ width: '100%', maxWidth: m.contentWidth, alignSelf: 'center' }}
         contentContainerStyle={[styles.authScroll, { width: '100%', paddingTop: m.verticalScale(8), paddingBottom: m.verticalScale(16), paddingHorizontal: m.scale(22) }]}
         showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets
       >
         <AuthBackButton onPress={() => navigation.navigate('LanguageSelection', { changeOnly: true })} />
         <LogoHeader showTitle={false} />
@@ -173,6 +174,7 @@ export function LoginScreen({ navigation, route }: LoginProps) {
 
         <AuthButton
           label={t('auth.signIn')}
+          disabled={busy}
           withArrow
           onPress={async () => {
             let pe: string | null = null;
@@ -239,6 +241,7 @@ export function CreateAccountScreen({ navigation }: CreateAccountProps) {
         style={{ width: '100%', maxWidth: m.contentWidth, alignSelf: 'center' }}
         contentContainerStyle={[styles.authScroll, { width: '100%', paddingTop: m.verticalScale(8), paddingBottom: m.verticalScale(16), paddingHorizontal: m.scale(22) }]}
         showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets
       >
         <AuthBackButton onPress={() => navigation.navigate('Login')} />
         <LogoHeader showTitle />
@@ -289,6 +292,7 @@ export function CreateAccountScreen({ navigation }: CreateAccountProps) {
 
         <AuthButton
           label={t('auth.create')}
+          disabled={busy}
           onPress={async () => {
             const ne = validateName(name);
             let pe: string | null = null;
@@ -320,6 +324,19 @@ export function CreateAccountScreen({ navigation }: CreateAccountProps) {
           }}
         />
         {busy ? <SkeletonBlock style={styles.authBusySkeleton} /> : null}
+
+        <View style={{ marginTop: m.verticalScale(24), marginBottom: m.verticalScale(8), paddingHorizontal: m.scale(8) }}>
+          <AppText style={{ fontSize: m.fontScale(11), textAlign: 'center', color: '#6B7280', lineHeight: m.fontScale(18) }} lines={null}>
+            By creating an account, you agree to our{' '}
+            <AppText style={{ color: colors.brand, fontFamily: 'Poppins-Medium' }} onPress={() => Linking.openURL('https://ibyapa.com/terms-of-service')}>
+              Terms of Service
+            </AppText>
+            {' '}and{' '}
+            <AppText style={{ color: colors.brand, fontFamily: 'Poppins-Medium' }} onPress={() => Linking.openURL('https://ibyapa.com/privacy-policy')}>
+              Privacy Policy
+            </AppText>.
+          </AppText>
+        </View>
 
         <Pressable style={styles.bottomLinkRowCreate} onPress={() => navigation.navigate('Login')}>
           <AppText style={styles.bottomLinkHint}>{t('auth.haveAccount')} </AppText>

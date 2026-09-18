@@ -1,7 +1,7 @@
 import { AppText } from '../components/AppText';
 import React from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { RootStackParamList } from '../navigation/types';
@@ -60,8 +60,9 @@ export function ProfileNativeScreen({ navigation }: Props) {
   const { hasSubscription, contentLanguage } = useAppFlow();
   const { tabScrollBottomPad } = useResponsiveLayout();
   const { t } = useI18n();
-  const { name, phone, logout, subscriptionSummary } = useAuth();
+  const { name, phone, logout, deleteAccount, subscriptionSummary } = useAuth();
   const [showSignOutConfirm, setShowSignOutConfirm] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const langLabel = t(`profile.lang.${contentLanguage}`);
   const subscriptionActive = hasSubscription || subscriptionSummary?.active === true;
   const subscriptionLanguageLabel = subscriptionSummary?.language ? t(`profile.lang.${subscriptionSummary.language}`) : t('common.na');
@@ -77,6 +78,30 @@ export function ProfileNativeScreen({ navigation }: Props) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('');
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      t('profile.deleteAccountTitle'),
+      t('profile.deleteAccountConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('profile.deleteAccountTitle'),
+          style: 'destructive',
+          onPress: async () => {
+            if (isDeleting) return;
+            setIsDeleting(true);
+            try {
+              await deleteAccount();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete account. Please try again later.');
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <ScreenColumn>
@@ -162,9 +187,22 @@ export function ProfileNativeScreen({ navigation }: Props) {
             </View>
           </TouchableOpacity>
 
+          <View style={{ marginTop: spacing.xl, marginBottom: spacing.sm, alignItems: 'center' }}>
+            <AppText style={{ fontSize: 13, color: colors.inkMuted }}>
+              <AppText style={{ color: colors.brand }} onPress={() => Linking.openURL('https://ibyapa.com/terms-of-service')}>Terms</AppText>
+              {'  •  '}
+              <AppText style={{ color: colors.brand }} onPress={() => Linking.openURL('https://ibyapa.com/privacy-policy')}>Privacy Policy</AppText>
+            </AppText>
+          </View>
+
           <TouchableOpacity style={styles.signOutBtn} onPress={() => setShowSignOutConfirm(true)} activeOpacity={0.82}>
-            <MaterialCommunityIcons name="logout-variant" size={19} color={colors.danger} />
+            <MaterialCommunityIcons name="logout-variant" size={19} color={colors.ink} />
             <AppText style={styles.signOutText}>{t('profile.signOut')}</AppText>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.deleteAccountBtn, isDeleting && { opacity: 0.5 }]} onPress={handleDeleteAccount} activeOpacity={0.82} disabled={isDeleting}>
+            <MaterialCommunityIcons name="delete-outline" size={19} color={colors.danger} />
+            <AppText style={styles.deleteAccountText}>{isDeleting ? t('common.loading') : t('profile.deleteAccountTitle')}</AppText>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -379,11 +417,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  signOutText: {
+    ...typography.bodyStrong,
+    marginLeft: spacing.sm,
+    color: colors.ink,
+  },
+  deleteAccountBtn: {
+    height: 54,
+    marginTop: spacing.md,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
     backgroundColor: colors.dangerSoft,
     borderWidth: 1,
     borderColor: colors.dangerSoft,
   },
-  signOutText: {
+  deleteAccountText: {
     ...typography.bodyStrong,
     marginLeft: spacing.sm,
     color: colors.danger,

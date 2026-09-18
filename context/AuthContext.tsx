@@ -9,6 +9,7 @@ import { decodeJwtExpiryMs, formatTokenExpiry, isTokenExpired, logAuthEvent, sho
 import { ApiError } from '../services/api/types';
 import {
   getUserAndPayment,
+  deleteAccountProfile,
   latestActiveSubscriptionLanguage,
   profileHasHighestSubscription,
   profileHasTimeBasedSubscription,
@@ -42,6 +43,7 @@ type AuthContextValue = AuthState & {
   login: (account: string, password: string) => Promise<void>;
   signup: (name: string, phone: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   /** Refreshes profile from the server without downgrading entitlements on transient failures. */
   refreshProfile: () => Promise<ProfileRefreshResult>;
 };
@@ -382,6 +384,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [accessToken, userId, applyProfile, clearStoredSession]);
 
+  const deleteAccount = useCallback(async () => {
+    if (!accessToken || !userId) {
+      throw new Error('No active session');
+    }
+    await deleteAccountProfile(userId, accessToken);
+    await logout('account_deleted');
+  }, [accessToken, userId, logout]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       accessToken,
@@ -393,9 +403,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       signup,
       logout,
+      deleteAccount,
       refreshProfile,
     }),
-    [accessToken, userId, name, phone, subscriptionSummary, authReady, login, signup, logout, refreshProfile],
+    [accessToken, userId, name, phone, subscriptionSummary, authReady, login, signup, logout, deleteAccount, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
