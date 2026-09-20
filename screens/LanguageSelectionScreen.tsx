@@ -44,7 +44,7 @@ export function LanguageSelectionScreen({ navigation, route }: Props) {
   const m = useMobile();
   const { t } = useI18n();
   const { setContentLanguage, contentLanguage, commitLanguageSelection } = useAppFlow();
-  const { accessToken, userId, refreshProfile } = useAuth();
+  const { accessToken, userId } = useAuth();
   const changeOnly = Boolean(route.params?.changeOnly);
   const insets = useSafeAreaInsets();
 
@@ -117,7 +117,6 @@ export function LanguageSelectionScreen({ navigation, route }: Props) {
                   if (accessToken && userId) {
                     try {
                       await updateUserProfile(userId, accessToken, { lang });
-                      await refreshProfile();
                     } catch (e) {
                       if (__DEV__) {
                         console.warn('[LanguageSelection] backend language update failed', getMessageFromUnknownError(e));

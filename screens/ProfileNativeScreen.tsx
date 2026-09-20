@@ -191,7 +191,7 @@ export function ProfileNativeScreen({ navigation }: Props) {
             <AppText style={{ fontSize: 13, color: colors.inkMuted }}>
               <AppText style={{ color: colors.brand }} onPress={() => Linking.openURL('https://ibyapa.com/terms-of-service')}>Terms</AppText>
               {'  •  '}
-              <AppText style={{ color: colors.brand }} onPress={() => Linking.openURL('https://ibyapa.com/privacy-policy')}>Privacy Policy</AppText>
+              <AppText style={{ color: colors.brand }} onPress={() => Linking.openURL('https://www.ibyapa.com/privacy')}>Privacy Policy</AppText>
             </AppText>
           </View>
 

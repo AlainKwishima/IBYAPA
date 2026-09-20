@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
+import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 
 import { RootStackParamList } from '../navigation/types';
 import { useI18n } from '../i18n/useI18n';
@@ -11,6 +12,7 @@ import { ScreenColumn } from '../components/ScreenColumn';
 import { colors, radii, shadows, spacing, typography } from '../constants/theme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const SUCCESS_SOUND = require('../assets/sounds/exam-success.wav');
 
 
 type FailedProps = NativeStackScreenProps<RootStackParamList, 'TestFailedNative'>;
@@ -65,7 +67,7 @@ function ScoreRing({ passed, percent }: { passed: boolean; percent: number }) {
         />
       </Svg>
       <View style={styles.ringInner}>
-        <Text style={styles.ringValue}>{percent}</Text>
+        <Text style={styles.ringValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>{percent}</Text>
         <Text style={styles.ringPercent}>%</Text>
       </View>
     </View>
@@ -92,6 +94,8 @@ function ResultTemplate({
   const { t } = useI18n();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
+  const successSound = useAudioPlayer(passed ? SUCCESS_SOUND : null);
+  const hasPlayedSuccessSound = useRef(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -108,6 +112,19 @@ function ResultTemplate({
       }),
     ]).start();
   }, [fadeAnim, slideAnim]);
+
+  useEffect(() => {
+    if (!passed || hasPlayedSuccessSound.current) return;
+    hasPlayedSuccessSound.current = true;
+    successSound.volume = 0.55;
+    void setAudioModeAsync({
+      playsInSilentMode: false,
+      interruptionMode: 'mixWithOthers',
+    }).catch(() => {
+      // The result screen remains fully usable if audio focus is unavailable.
+    });
+    successSound.play();
+  }, [passed, successSound]);
 
   const returnToExamInstructions = () => {
     navigation.reset({
@@ -159,12 +176,12 @@ function ResultTemplate({
 
         <View style={styles.statsCard}>
           <View style={styles.statCol}>
-            <Text style={styles.statValue}>{score}</Text>
+            <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{score}</Text>
             <Text style={styles.statLabel}>{t('test.results').toUpperCase()}</Text>
           </View>
           <View style={styles.dividerVertical} />
           <View style={styles.statCol}>
-            <Text style={styles.statValue}>{time}</Text>
+            <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{time}</Text>
             <Text style={styles.statLabel}>{t('test.time').toUpperCase()}</Text>
           </View>
         </View>
@@ -300,11 +317,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   ringInner: {
+    width: 148,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   ringValue: {
+    maxWidth: 116,
+    flexShrink: 1,
     fontFamily: 'Poppins-ExtraBold',
     fontSize: 56,
     color: colors.ink,
@@ -348,11 +368,15 @@ const styles = StyleSheet.create({
   statCol: {
     alignItems: 'center',
     flex: 1,
+    minWidth: 0,
   },
   statValue: {
     fontFamily: 'Poppins-Bold',
     fontSize: 20,
+    maxWidth: '100%',
+    flexShrink: 1,
     color: colors.ink,
+    textAlign: 'center',
   },
   statLabel: {
     marginTop: 4,

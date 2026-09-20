@@ -3,6 +3,15 @@ const apiUrl = (process.env.EXPO_PUBLIC_API_URL || defaultApi).replace(/\/+$/, '
 
 module.exports = ({ config }) => ({
   ...config,
+  plugins: [
+    ...(config.plugins ?? []),
+    ['expo-audio', {
+      microphonePermission: false,
+      recordAudioAndroid: false,
+      enableBackgroundRecording: false,
+      enableBackgroundPlayback: false,
+    }],
+  ],
   owner: 'aln.k',
   extra: {
     ...(config.extra ?? {}),

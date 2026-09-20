@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Alert, Image, Linking, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import LottieView from 'lottie-react-native';
 
 import { RootStackParamList } from '../navigation/types';
 import { AppHeader } from '../components/AppHeader';
@@ -11,7 +12,7 @@ import { BottomNavBar } from '../components/BottomNavBar';
 import { ScreenColumn } from '../components/ScreenColumn';
 import { ReadSectionTabs } from '../components/ReadSectionTabs';
 import { SectionHeading } from '../components/SectionHeading';
-import { EmptyState, InlineErrorState, DocumentCardSkeleton, SignGroupCardSkeleton } from '../components/RequestStates';
+import { EmptyState, InlineErrorState } from '../components/RequestStates';
 import { PdfDocumentIcon } from '../components/PdfDocumentIcon';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +29,8 @@ import { SUPPORT_CONTACT } from '../constants/support';
 type ReadProps = NativeStackScreenProps<RootStackParamList, 'ReadingNative'>;
 type HelpProps = NativeStackScreenProps<RootStackParamList, 'HelpCenterNative'>;
 type ReadTab = 'documents' | 'signs';
+
+const READING_LOADER_ANIMATION = require('../assets/animations/exam-loader.json');
 
 function pdfOpenUrl(item: PdfItem): string | undefined {
   const candidates = [
@@ -69,6 +72,23 @@ function pdfExtension(item: PdfItem): 'PDF' | 'DOC' | 'PPT' | 'FILE' {
   if (url.includes('.doc')) return 'DOC';
   if (url.includes('.ppt')) return 'PPT';
   return 'FILE';
+}
+
+function ReadingPreloader({ message }: { message: string }) {
+  return (
+    <View style={styles.readingLoader} accessible accessibilityRole="progressbar" accessibilityLabel={message}>
+      <View style={styles.readingLoaderFrame}>
+        <LottieView
+          source={READING_LOADER_ANIMATION}
+          autoPlay
+          loop
+          resizeMode="contain"
+          style={styles.readingLoaderAnimation}
+        />
+      </View>
+      <AppText style={styles.readingLoaderText} lines={null}>{message}</AppText>
+    </View>
+  );
 }
 
 const FILE_TONES = {
@@ -518,11 +538,7 @@ export function ReadingNativeScreen({ navigation, route }: ReadProps) {
           </View>
 
           {activeTab === 'documents' && loading ? (
-            <View style={{ gap: spacing.md }}>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <DocumentCardSkeleton key={i} />
-              ))}
-            </View>
+            <ReadingPreloader message={t('reading.loadingDocuments')} />
           ) : activeTab === 'documents' && error ? (
             <InlineErrorState
               title={t('reading.languageUnavailableTitle')}
@@ -562,11 +578,7 @@ export function ReadingNativeScreen({ navigation, route }: ReadProps) {
               ))}
             </View>
           ) : roadSignsLoading ? (
-            <View style={{ gap: spacing.md }}>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <SignGroupCardSkeleton key={i} />
-              ))}
-            </View>
+            <ReadingPreloader message={t('roadsigns.loading')} />
           ) : roadSignsError ? (
             <InlineErrorState
               title={t('roadsigns.errorTitle')}
@@ -757,6 +769,30 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     lineHeight: 18,
     color: colors.brandStrong,
+  },
+  readingLoader: {
+    marginTop: spacing.lg,
+    minHeight: 244,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  readingLoaderFrame: {
+    width: 164,
+    height: 164,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandStrong,
+  },
+  readingLoaderAnimation: {
+    width: 148,
+    height: 148,
+  },
+  readingLoaderText: {
+    ...typography.bodyStrong,
+    marginTop: spacing.md,
+    color: colors.inkMuted,
+    textAlign: 'center',
   },
   subscriptionLanguageNotice: {
     ...typography.caption,
@@ -1132,7 +1168,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.green,
+    backgroundColor: '#10B981',
   },
   whatsappText: {
     ...typography.bodyStrong,

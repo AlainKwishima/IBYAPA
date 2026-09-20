@@ -9,6 +9,9 @@ export type UserAndPayment = {
     hasAttemptedTrial?: boolean;
     trialAttempts?: number;
     language?: string;
+    /** Language attached to the subscription, separate from the UI language. */
+    subscriptionLanguage?: string;
+    subscription_language?: string;
     /** Privileged roles (admin / tester) always get full access. */
     role?: string;
     /** Some backends set this directly on the user object. */
@@ -351,13 +354,18 @@ export function profileHasHighestSubscription(profile: UserAndPayment): boolean 
   });
 }
 
-export function profileSubscriptionSummary(profile: UserAndPayment): SubscriptionSummary {
+export function profileSubscriptionSummary(
+  profile: UserAndPayment,
+  fallbackSubscriptionLanguage: ContentLanguageCode | null = null,
+): SubscriptionSummary {
+  const resolvedSubscriptionLanguage = latestActiveSubscriptionLanguage(profile, fallbackSubscriptionLanguage);
+
   if (profileHasPrivilegedAccess(profile)) {
     return {
       active: true,
       planName: profile.user.planName ?? planNameFromRaw(profile.user.plan) ?? 'Full access',
       expiresAt: profile.user.subscriptionExpiry ?? profile.user.subscriptionExpiresAt ?? profile.user.expiresAt ?? null,
-      language: normalizeLanguageCode(profile.user.language),
+      language: resolvedSubscriptionLanguage,
       source: 'role',
     };
   }
@@ -370,7 +378,7 @@ export function profileSubscriptionSummary(profile: UserAndPayment): Subscriptio
       active: userActive,
       planName: userPlan,
       expiresAt: userExpiry,
-      language: normalizeLanguageCode(profile.user.language),
+      language: resolvedSubscriptionLanguage,
       source: 'user',
     };
   }
@@ -386,7 +394,7 @@ export function profileSubscriptionSummary(profile: UserAndPayment): Subscriptio
         active: paymentsIndicateActiveSubscription([o]),
         planName: firstNonEmptyString(o.planName, o.plan, o.subscription_type, o.subscriptionType, o.planType, o.type),
         expiresAt: paymentExpiry(o),
-        language: paymentLanguage(o) ?? normalizeLanguageCode(profile.user.language),
+        language: paymentLanguage(o) ?? resolvedSubscriptionLanguage,
         source: 'payment',
       };
     }
@@ -396,7 +404,7 @@ export function profileSubscriptionSummary(profile: UserAndPayment): Subscriptio
     active: false,
     planName: null,
     expiresAt: null,
-    language: normalizeLanguageCode(profile.user.language),
+    language: resolvedSubscriptionLanguage,
     source: 'none',
   };
 }
@@ -438,13 +446,20 @@ export function profileHasTimeBasedSubscription(profile: UserAndPayment): boolea
 
 /**
  * Extracts the language tied to the latest active subscription/payment.
- * Returns null when the backend profile does not expose a usable active language.
+ * Uses the last known entitlement language before falling back to the mutable
+ * user language for first-time profile resolution.
  */
-export function latestActiveSubscriptionLanguage(profile: UserAndPayment): ContentLanguageCode | null {
+export function latestActiveSubscriptionLanguage(
+  profile: UserAndPayment,
+  fallbackSubscriptionLanguage: ContentLanguageCode | null = null,
+): ContentLanguageCode | null {
+  const explicitUserLanguage = normalizeLanguageCode(
+    profile.user.subscriptionLanguage ?? profile.user.subscription_language,
+  );
   const userLanguage = normalizeLanguageCode(profile.user.language);
 
   if (!Array.isArray(profile.payment) || profile.payment.length === 0) {
-    return userLanguage;
+    return explicitUserLanguage ?? fallbackSubscriptionLanguage ?? userLanguage;
   }
 
   const activePayments = profile.payment
@@ -470,5 +485,5 @@ export function latestActiveSubscriptionLanguage(profile: UserAndPayment): Conte
     if (lang) return lang;
   }
 
-  return userLanguage;
+  return explicitUserLanguage ?? fallbackSubscriptionLanguage ?? userLanguage;
 }

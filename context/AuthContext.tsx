@@ -70,6 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCanChangeLanguage,
     setSubscriptionLanguage,
     setSigningOut,
+    subscriptionLanguage,
+    hydrated,
     contentLanguage,
   } = useAppFlow();
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -105,8 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const sub = profileIndicatesActiveSubscription(profile);
       const timeBased = profileHasTimeBasedSubscription(profile);
       const highestSub = profileHasHighestSubscription(profile);
-      const summary = profileSubscriptionSummary(profile);
-      const paidLanguage = sub ? latestActiveSubscriptionLanguage(profile) : null;
+      const paidLanguage = sub ? latestActiveSubscriptionLanguage(profile, subscriptionLanguage) : null;
+      const summary = profileSubscriptionSummary(profile, paidLanguage);
       if (__DEV__) {
         console.log('[AuthContext] hasSubscription resolved to →', sub);
         console.log('[AuthContext] hasTimeBasedSubscription resolved to →', timeBased);
@@ -122,7 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logAuthEvent('apply_profile_ok', { userId: uid, hasSubscription: sub, timeBased });
       return sub ? { status: 'active', hasSubscription: true } : { status: 'inactive', hasSubscription: false };
     },
-    [setCanChangeLanguage, setHasSubscription, setHasTimeBasedSubscription, setHasUsedFreeTrial, setSubscriptionLanguage],
+    [setCanChangeLanguage, setHasSubscription, setHasTimeBasedSubscription, setHasUsedFreeTrial, setSubscriptionLanguage, subscriptionLanguage],
   );
 
   const clearStoredSession = useCallback(
@@ -184,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      if (authReady) return;
+      if (!hydrated || authReady) return;
       try {
         let parsed = await getSecureJson<Partial<AuthState>>(AUTH_SECURE_KEY);
         if (!parsed) {
@@ -237,10 +239,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     void load();
     return () => { cancelled = true; };
-    // Empty dependency array ensures this single-fire bootstrap logic doesn't repeatedly trigger.
+    // Wait for flow hydration so a persisted subscription language is available before refreshing the profile.
   }, [
     applyProfile,
     clearStoredSession,
+    hydrated,
     scheduleTokenExpiryCheck,
     setCanChangeLanguage,
     setHasSubscription,

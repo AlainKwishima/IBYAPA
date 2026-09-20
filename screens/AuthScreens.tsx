@@ -332,7 +332,7 @@ export function CreateAccountScreen({ navigation }: CreateAccountProps) {
               Terms of Service
             </AppText>
             {' '}and{' '}
-            <AppText style={{ color: colors.brand, fontFamily: 'Poppins-Medium' }} onPress={() => Linking.openURL('https://ibyapa.com/privacy-policy')}>
+            <AppText style={{ color: colors.brand, fontFamily: 'Poppins-Medium' }} onPress={() => Linking.openURL('https://www.ibyapa.com/privacy')}>
               Privacy Policy
             </AppText>.
           </AppText>

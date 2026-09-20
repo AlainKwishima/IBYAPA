@@ -21,6 +21,7 @@ const en: Record<string, string> = {
   'nav.read': 'Read',
   'nav.watch': 'Watch',
   'nav.performance': 'Performance',
+  'nav.performanceShort': 'Activity',
 
   'gate.examReady.title': 'Ready to start?',
   'gate.examReady.message': 'Try our driving exam and study what you need to pass.',
@@ -586,6 +587,7 @@ const rw: Record<string, string> = {
   'nav.read': ' Gusoma',
   'nav.watch': 'Kureba',
   'nav.performance': 'Imikorere',
+  'nav.performanceShort': 'Amanota',
 
   'gate.examReady.title': 'Witeguye gutangira?',
   'gate.examReady.message': 'Gerageza ikizamini cy’agateganyo kandi wige ibikenewe kugira ngo ubashe.',
@@ -1149,6 +1151,7 @@ const fr: Record<string, string> = {
   'nav.read': 'Lire',
   'nav.watch': 'Vidéos',
   'nav.performance': 'Résultats',
+  'nav.performanceShort': 'Résultats',
 
   'gate.examReady.title': 'Prêt à commencer ?',
   'gate.examReady.message': "Essayez l'examen et révisez ce qu'il faut pour réussir.",

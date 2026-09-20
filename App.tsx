@@ -89,7 +89,7 @@ const mainTabScreenOptions: NativeStackNavigationOptions = {
 
 function RootNavigator() {
   const { hydrated, hasChosenLanguage } = useAppFlow();
-  const { authReady, isSignedIn, accessToken } = useAuth();
+  const { authReady, accessToken, userId } = useAuth();
 
   React.useEffect(() => {
     if (hydrated && authReady) {
@@ -103,7 +103,7 @@ function RootNavigator() {
 
   let initialRouteName: keyof RootStackParamList = 'LanguageSelection';
   if (hasChosenLanguage) {
-    if (!isSignedIn || !accessToken) {
+    if (!accessToken || !userId) {
       initialRouteName = 'Login';
     } else {
       initialRouteName = 'HomeNative';

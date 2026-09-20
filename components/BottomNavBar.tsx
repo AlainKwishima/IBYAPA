@@ -84,7 +84,7 @@ export function BottomNavBar({ navigation, active, onPressTab }: BottomNavBarPro
     { key: 'exam' as const, labelKey: 'nav.exam' as const, route: 'ExamNative' as const, icon: 'clipboard-outline' as const },
     { key: 'read' as const, labelKey: 'nav.read' as const, route: 'ReadingNative' as const, icon: 'book-outline' as const },
     { key: 'watch' as const, labelKey: 'nav.watch' as const, route: 'VideoCourseList' as const, icon: 'play-circle-outline' as const },
-    { key: 'performance' as const, labelKey: 'nav.performance' as const, route: 'PerformanceNative' as const, icon: 'analytics-outline' as const },
+    { key: 'performance' as const, labelKey: 'nav.performance' as const, shortLabelKey: 'nav.performanceShort' as const, route: 'PerformanceNative' as const, icon: 'analytics-outline' as const },
   ] as const;
 
   const onPress = (tab: TabKey, routeName: keyof RootStackParamList) => {
@@ -132,19 +132,22 @@ export function BottomNavBar({ navigation, active, onPressTab }: BottomNavBarPro
       >
         {tabs.map((tab) => {
           const isActive = tab.key === activeKey;
+          const fullLabel = t(tab.labelKey);
+          const label = 'shortLabelKey' in tab ? t(tab.shortLabelKey) : fullLabel;
           return (
             <Pressable
               key={tab.key}
               style={({ pressed }) => [styles.tab, { minWidth: touch(MIN_TOUCH_TARGET), minHeight: touch(MIN_TOUCH_TARGET) }, pressed && styles.tabPressed]}
               onPress={() => onPress(tab.key, tab.route)}
               accessibilityRole="button"
+              accessibilityLabel={fullLabel}
               accessibilityState={{ selected: isActive }}
             >
               <View style={[styles.tabBubble, { width: scale(42), height: verticalScale(32), borderRadius: radius(18) }, isActive && styles.tabBubbleActive]}>
                 <Ionicons name={tab.icon} size={iconSize} color={isActive ? colors.primary : colors.textMuted} />
               </View>
               <AppText style={[styles.tabText, { fontSize: labelSize, marginTop: verticalScale(1) }, isActive && styles.tabTextActive]} lines={1}>
-                {t(tab.labelKey)}
+                {label}
               </AppText>
             </Pressable>
           );

@@ -1,8 +1,9 @@
 import { AppText } from './AppText';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NavigationProp } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 
 import type { RootStackParamList } from '../navigation/types';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
@@ -32,6 +33,18 @@ export function AppHeader({
   truncateTitle = true,
 }: AppHeaderProps) {
   const { insets, scale, verticalScale, radius, touch, font, lineHeight } = useResponsiveLayout();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const refreshContent = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <View style={[styles.root, { paddingHorizontal: scale(spacing.lg) }]}>
@@ -58,8 +71,26 @@ export function AppHeader({
             <Text style={[styles.title, { fontSize: font(18), lineHeight: lineHeight(18) }]}>{title}</Text>
           )}
         </View>
-        <View style={[styles.side, styles.rightSide, { width: touch(44) }]}>
-          {right ?? (navigation ? <HeaderMenu navigation={navigation} iconColor={colors.white} topOffset={verticalScale(52)} rightOffset={scale(18)} /> : null)}
+        <View style={[styles.side, styles.rightSide, { width: touch(right || !navigation ? 44 : 88) }]}>
+          {right ?? (navigation ? (
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={[styles.iconButton, { width: touch(44), height: touch(44) }]}
+                onPress={() => void refreshContent()}
+                activeOpacity={0.72}
+                disabled={refreshing}
+                accessibilityRole="button"
+                accessibilityLabel="Refresh"
+              >
+                {refreshing ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Ionicons name="refresh-outline" size={scale(21)} color={colors.white} />
+                )}
+              </TouchableOpacity>
+              <HeaderMenu navigation={navigation} iconColor={colors.white} topOffset={verticalScale(52)} rightOffset={scale(18)} />
+            </View>
+          ) : null)}
         </View>
       </View>
       <View
@@ -94,6 +125,10 @@ const styles = StyleSheet.create({
   },
   rightSide: {
     alignItems: 'flex-end',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   iconButton: {
     alignItems: 'center',

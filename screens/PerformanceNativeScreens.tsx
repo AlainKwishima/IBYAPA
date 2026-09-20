@@ -197,8 +197,8 @@ function StatTile({
 
   return (
     <View style={styles.statTile}>
-      <AppText style={styles.statLabel}>{label}</AppText>
-      <AppText style={[styles.statValue, { color }]}>{value}</AppText>
+      <AppText style={styles.statLabel} lines={2}>{label}</AppText>
+      <AppText style={[styles.statValue, { color }]} lines={1}>{value}</AppText>
     </View>
   );
 }
@@ -272,23 +272,21 @@ function PerformanceSummary({ rows }: { rows: PerformanceHistoryRow[] }) {
       <View style={styles.scoreBand}>
         <AppText style={styles.scoreBandTitle}>{t('performance.yourScore')}</AppText>
         <View style={styles.scoreBandValues}>
-          <View>
+          <View style={styles.scoreExtremeCell}>
             <AppText style={styles.scoreBandMin}>{lowestScore}%</AppText>
-            <AppText style={styles.scoreBandLabel}>{t('performance.lowestScore')}</AppText>
+            <AppText style={styles.scoreBandLabel} lines={2}>{t('performance.lowestScore')}</AppText>
           </View>
-          <View style={styles.scoreBandCenter}>
-            <View style={styles.scoreTrack}>
-              <View style={[styles.scoreFill, { width: averageWidth }]} />
-            </View>
-            <AppText style={styles.scoreAverage}>
-              {t('performance.avgAccuracy')} <AppText style={styles.scoreAverageValue}>{avgAccuracy}%</AppText>
-            </AppText>
-          </View>
-          <View style={styles.scoreBandRight}>
+          <View style={[styles.scoreExtremeCell, styles.scoreExtremeCellRight]}>
             <AppText style={styles.scoreBandMax}>{highestScore}%</AppText>
-            <AppText style={styles.scoreBandLabel}>{t('performance.highestScore')}</AppText>
+            <AppText style={[styles.scoreBandLabel, styles.scoreBandLabelRight]} lines={2}>{t('performance.highestScore')}</AppText>
           </View>
         </View>
+        <View style={styles.scoreTrack}>
+          <View style={[styles.scoreFill, { width: averageWidth }]} />
+        </View>
+        <AppText style={styles.scoreAverage} lines={2}>
+          {t('performance.avgAccuracy')} <AppText style={styles.scoreAverageValue}>{avgAccuracy}%</AppText>
+        </AppText>
       </View>
     </View>
   );
@@ -728,11 +726,11 @@ const styles = StyleSheet.create({
   },
   statTile: {
     width: '48%',
-    minHeight: 82,
+    minHeight: 112,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     borderRadius: radii.lg,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
@@ -740,6 +738,8 @@ const styles = StyleSheet.create({
   statLabel: {
     ...typography.caption,
     fontFamily: 'Poppins-Bold',
+    minHeight: 34,
+    lineHeight: 17,
     color: colors.inkMuted,
   },
   statValue: {
@@ -763,7 +763,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    justifyContent: 'space-between',
+    gap: spacing.lg,
+  },
+  scoreExtremeCell: {
+    flex: 1,
+    minWidth: 0,
   },
   scoreBandMin: {
     fontFamily: 'Poppins-ExtraBold',
@@ -781,16 +786,18 @@ const styles = StyleSheet.create({
   scoreBandLabel: {
     ...typography.caption,
     marginTop: 2,
+    lineHeight: 17,
     color: colors.inkMuted,
   },
-  scoreBandCenter: {
-    flex: 1,
-  },
-  scoreBandRight: {
+  scoreExtremeCellRight: {
     alignItems: 'flex-end',
+  },
+  scoreBandLabelRight: {
+    textAlign: 'right',
   },
   scoreTrack: {
     height: 12,
+    marginTop: spacing.md,
     overflow: 'hidden',
     borderRadius: radii.pill,
     backgroundColor: colors.surfaceAlt,
@@ -947,7 +954,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   reviewQuestionChipCorrect: {
-    borderColor: '#10B981',
+    borderColor: '#2563EB',
     backgroundColor: colors.successSoft,
   },
   reviewQuestionChipWrong: {
@@ -1019,7 +1026,7 @@ const styles = StyleSheet.create({
   detailCard: { backgroundColor: colors.surface, borderRadius: radii.xl, padding: 24, borderWidth: 1, borderColor: colors.line, ...shadows.card },
   detailCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
   statusTag: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 10 },
-  statusTagPass: { backgroundColor: '#10B981' },
+  statusTagPass: { backgroundColor: '#2563EB' },
   statusTagFail: { backgroundColor: '#F05252' },
   statusTagText: { fontFamily: 'Poppins-Bold', fontSize: 10, color: '#FFFFFF' },
   statusTagTextPass: { color: '#FFFFFF' },
@@ -1255,9 +1262,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   answerOption: { minHeight: 64, borderRadius: 16, backgroundColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
-  correctOption: { backgroundColor: '#DCFCE7', borderWidth: 1, borderColor: '#10B981' },
+  correctOption: { backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#2563EB' },
   wrongOption: { backgroundColor: '#FDE8E8', borderWidth: 1, borderColor: '#F05252' },
-  optionMarker: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  optionMarker: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#2563EB', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   answerStack: { flex: 1, paddingVertical: 12 },
   answerLabel: { fontFamily: 'Poppins-Bold', fontSize: 10, color: '#6B7280', textTransform: 'uppercase', marginBottom: 3 },
   markerText: { fontFamily: 'Poppins-Bold', fontSize: 12, color: '#374151' },

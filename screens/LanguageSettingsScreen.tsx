@@ -24,7 +24,7 @@ const OPTIONS: Array<{ code: ContentLanguageCode; label: string }> = [
 
 export function LanguageSettingsScreen({ navigation }: Props) {
   const { contentLanguage, canChangeLanguage, setContentLanguage } = useAppFlow();
-  const { accessToken, userId, refreshProfile } = useAuth();
+  const { accessToken, userId } = useAuth();
   const { t } = useI18n();
 
   const updateLanguage = async (lang: ContentLanguageCode) => {
@@ -33,7 +33,6 @@ export function LanguageSettingsScreen({ navigation }: Props) {
     if (!accessToken || !userId) return;
     try {
       await updateUserProfile(userId, accessToken, { lang });
-      await refreshProfile();
     } catch (e) {
       if (__DEV__) {
         console.warn('[LanguageSettings] backend language update failed', getMessageFromUnknownError(e));

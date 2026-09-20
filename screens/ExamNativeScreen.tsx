@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import LottieView from 'lottie-react-native';
 
 import { RootStackParamList, type ExamAnswerDetail, type ExamMode, type ExamResultParams } from '../navigation/types';
 import { ScreenColumn } from '../components/ScreenColumn';
@@ -31,6 +32,7 @@ import { colors, radii, shadows, spacing, typography } from '../constants/theme'
 type Props = NativeStackScreenProps<RootStackParamList, 'ExamNative'>;
 type ExamDialogKind = 'exit' | 'unanswered' | 'timeout' | null;
 
+const EXAM_LOADER_ANIMATION = require('../assets/animations/exam-loader.json');
 const EXAM_DURATION_SEC = 20 * 60;
 const EXAM_QUESTION_LIMIT = 20;
 const PASS_PERCENT = 60;
@@ -434,7 +436,19 @@ export function ExamNativeScreen({ navigation, route }: Props) {
   if (loading) {
     return (
       <ScreenColumn backgroundColor={colors.brandStrong}>
-        <View />
+        <View style={styles.loadingState}>
+          <View style={styles.loadingAnimationFrame}>
+            <LottieView
+              source={EXAM_LOADER_ANIMATION}
+              autoPlay
+              loop
+              resizeMode="contain"
+              style={styles.loadingAnimation}
+            />
+          </View>
+          <Text style={styles.loadingTitle}>{t('exam.loading')}</Text>
+          <Text style={styles.loadingBody}>{t('exam.loadingHint')}</Text>
+        </View>
       </ScreenColumn>
     );
   }
@@ -728,6 +742,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xxxl,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.brandStrong,
+  },
+  loadingAnimationFrame: {
+    width: 220,
+    height: 220,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  loadingAnimation: {
+    width: 190,
+    height: 190,
   },
   loadingTitle: {
     ...typography.title,
@@ -869,7 +896,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   questionChipAnswered: {
-    borderColor: '#10B981',
+    borderColor: '#2563EB',
     backgroundColor: colors.greenSoft,
   },
   questionChipActive: {

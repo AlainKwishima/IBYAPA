@@ -39,7 +39,7 @@ function buildSecurePreviewHtml(fileUrl: string, title: string, accessToken: str
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+      content="width=device-width, initial-scale=1, minimum-scale=0.75, maximum-scale=4, user-scalable=yes"
     />
     <title>${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</title>
     <style>
@@ -584,6 +584,9 @@ export function PdfViewerScreen({ navigation, route }: Props) {
             allowUniversalAccessFromFileURLs={false}
             showsHorizontalScrollIndicator={false}
             showsVerticalScrollIndicator={false}
+            scalesPageToFit={false}
+            setBuiltInZoomControls
+            setDisplayZoomControls={false}
             onMessage={handleMessage}
             onShouldStartLoadWithRequest={(request) => {
               const nextUrl = request.url || '';
