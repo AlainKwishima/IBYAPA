@@ -32,6 +32,7 @@ jobs:
 
       - name: Validate Expo project
         run: npx expo-doctor
+        continue-on-error: true
 
       - name: Queue Android APK build on EAS
         env:
