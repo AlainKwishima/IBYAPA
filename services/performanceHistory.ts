@@ -42,13 +42,22 @@ export function mapServerPerformanceEntry(raw: unknown, index: number): Performa
   const createdAt = typeof createdRaw === 'string' ? createdRaw : new Date().toISOString();
   const startedAt = typeof o.startedAt === 'string' ? o.startedAt : undefined;
   const finishedAt = typeof o.finishedAt === 'string' ? o.finishedAt : undefined;
-  const correct = Number(o.correctAnswers ?? o.correct ?? o.score ?? o.obtainedMarks ?? o.marksObtained ?? 0);
+  const rawCorrect = o.correctAnswers ?? o.correct ?? o.score ?? o.obtainedMarks ?? o.marksObtained;
+  const parsedCorrect = rawCorrect == null ? Number.NaN : Number(rawCorrect);
   const total = Number(o.totalQuestions ?? o.total ?? o.outOf ?? o.maxQuestions ?? 20) || 20;
-  const percentRaw = o.percentage ?? o.percent ?? o.scorePercent;
+  // The mobile client sends the documented `marks` field as a percentage.
+  // Keep that value when the backend response does not also include correct answers.
+  const marks = Number(o.marks);
+  const percentRaw = o.percentage ?? o.percent ?? o.scorePercent ?? (Number.isFinite(marks) ? marks : undefined);
   const percent =
     typeof percentRaw === 'number' && Number.isFinite(percentRaw)
       ? Math.round(percentRaw)
-      : Math.round((correct / Math.max(total, 1)) * 100);
+      : Number.isFinite(Number(percentRaw))
+        ? Math.round(Number(percentRaw))
+        : Number.isFinite(parsedCorrect)
+          ? Math.round((parsedCorrect / Math.max(total, 1)) * 100)
+          : 0;
+  const correct = Number.isFinite(parsedCorrect) ? parsedCorrect : Math.round((percent / 100) * total);
   const passed = Boolean(o.passed ?? o.isPassed ?? percent >= 60);
   const durationMin = o.durationMinutes ?? o.durationInMinutes ?? o.duration;
   const duration =
@@ -61,7 +70,14 @@ export function mapServerPerformanceEntry(raw: unknown, index: number): Performa
         : typeof o.durationLabel === 'string'
           ? o.durationLabel
           : '—';
-  const examType = typeof o.examType === 'string' ? o.examType : typeof o.type === 'string' ? o.type : '';
+  const examType =
+    typeof o.examType === 'string'
+      ? o.examType
+      : typeof o.examName === 'string'
+        ? o.examName
+        : typeof o.type === 'string'
+          ? o.type
+          : '';
   const title = mapExamTitleKey(examType);
 
   return {
@@ -158,9 +174,30 @@ export function mapLocalExamRecord(r: LocalExamRecord): PerformanceHistoryRow {
 export function mergePerformanceHistory(server: unknown[], local: LocalExamRecord[]): PerformanceHistoryRow[] {
   const fromServer = server.map((x, i) => mapServerPerformanceEntry(x, i)).filter(Boolean) as PerformanceHistoryRow[];
   const fromLocal = local.map(mapLocalExamRecord);
-  const byId = new Map<string, PerformanceHistoryRow>();
-  for (const row of [...fromServer, ...fromLocal]) {
-    byId.set(row.id, row);
+  const serverIds = new Set(fromServer.map((row) => row.id));
+  const merged = [...fromServer];
+
+  for (const row of fromLocal) {
+    const sameServerIndex = merged.findIndex(
+      (existing) =>
+        serverIds.has(existing.id) &&
+        existing.title === row.title &&
+        existing.percent === row.percent &&
+        existing.sortKey > 0 &&
+        row.sortKey > 0 &&
+        Math.abs(existing.sortKey - row.sortKey) <= 2 * 60 * 1000,
+    );
+
+    if (sameServerIndex >= 0) {
+      // Keep the local copy because it contains the complete answer review.
+      if ((row.answerDetails?.length ?? 0) > (merged[sameServerIndex].answerDetails?.length ?? 0)) {
+        merged[sameServerIndex] = row;
+      }
+      continue;
+    }
+
+    merged.push(row);
   }
-  return Array.from(byId.values()).sort((a, b) => b.sortKey - a.sortKey);
+
+  return merged.sort((a, b) => b.sortKey - a.sortKey);
 }

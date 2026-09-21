@@ -23,12 +23,11 @@ const OPTIONS: Array<{ code: ContentLanguageCode; label: string }> = [
 ];
 
 export function LanguageSettingsScreen({ navigation }: Props) {
-  const { contentLanguage, canChangeLanguage, setContentLanguage } = useAppFlow();
+  const { contentLanguage, setContentLanguage } = useAppFlow();
   const { accessToken, userId } = useAuth();
   const { t } = useI18n();
 
   const updateLanguage = async (lang: ContentLanguageCode) => {
-    if (!canChangeLanguage) return;
     await setContentLanguage(lang);
     if (!accessToken || !userId) return;
     try {
@@ -45,12 +44,6 @@ export function LanguageSettingsScreen({ navigation }: Props) {
       <AppHeader title={t('language.settingsTitle')} navigation={navigation} onBack={() => navigation.goBack()} />
 
       <View style={styles.body}>
-        {!canChangeLanguage ? (
-          <View style={styles.lockNotice}>
-            <Ionicons name="lock-closed-outline" size={16} color="#374151" />
-            <AppText style={styles.lockNoticeText}>{t('language.lockedBody')}</AppText>
-          </View>
-        ) : null}
         <View style={styles.listCard}>
           {OPTIONS.map((option, idx) => {
             const selected = contentLanguage === option.code;
@@ -63,7 +56,6 @@ export function LanguageSettingsScreen({ navigation }: Props) {
                 style={[styles.row, idx < OPTIONS.length - 1 && styles.rowDivider]}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                disabled={!canChangeLanguage}
               >
                 <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>
                   {selected ? <View style={styles.radioInner} /> : null}
@@ -85,25 +77,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
     backgroundColor: colors.canvas,
-  },
-  lockNotice: {
-    marginBottom: 12,
-    borderRadius: radii.md,
-    backgroundColor: colors.amberSoft,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  lockNoticeText: {
-    marginLeft: 8,
-    flex: 1,
-    fontFamily: 'Poppins-Medium',
-    fontSize: 12,
-    lineHeight: 18,
-    color: colors.inkMuted,
   },
   listCard: {
     borderRadius: radii.lg,

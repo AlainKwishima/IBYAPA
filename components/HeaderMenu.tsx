@@ -1,6 +1,6 @@
 import { AppText } from './AppText';
 import React, { useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NavigationProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../navigation/types';
 import { MIN_TOUCH_TARGET } from '../constants/accessibility';
 import { useAuth } from '../context/AuthContext';
-import { useAppFlow } from '../context/AppFlowContext';
 import { useI18n } from '../i18n/useI18n';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { SignOutConfirmationModal } from './SignOutConfirmationModal';
@@ -32,7 +31,6 @@ export function HeaderMenu({
   const insets = useSafeAreaInsets();
   const { shortSide, scale, verticalScale, radius, touch, icon, font, lineHeight } = useResponsiveLayout();
   const { logout } = useAuth();
-  const { canChangeLanguage } = useAppFlow();
   const { t } = useI18n();
   const compact = shortSide <= 360;
   const dropdownWidth = scale(compact ? 170 : 186);
@@ -51,10 +49,6 @@ export function HeaderMenu({
 
   const onSelect = async (route: keyof RootStackParamList | null) => {
     setOpen(false);
-    if (route === 'LanguageSettings' && !canChangeLanguage) {
-      Alert.alert(t('language.lockedTitle'), t('language.lockedBody'));
-      return;
-    }
     if (route === null) {
       setShowSignOutConfirm(true);
       return;

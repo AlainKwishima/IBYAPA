@@ -618,15 +618,6 @@ export function PerformanceReviewNativeScreen({ navigation, route }: ReviewProps
                 })}
               </View>
 
-              <View style={styles.explanationBox}>
-                <View style={styles.explainHeader}>
-                  <Ionicons name="bulb-outline" size={16} color={colors.brand} />
-                  <Text style={styles.explainTitle}>{t('performance.feedback')}</Text>
-                </View>
-                <Text style={styles.explainText}>
-                  {currentQuestion.explanation ?? t('performance.reviewExplanation')}
-                </Text>
-              </View>
             </ScrollView>
 
             <View style={styles.reviewExamFooter}>
@@ -1270,10 +1261,6 @@ const styles = StyleSheet.create({
   markerText: { fontFamily: 'Poppins-Bold', fontSize: 12, color: '#374151' },
   answerLight: { flex: 1, fontFamily: 'Poppins-Bold', fontSize: 14, color: '#111827' },
   answerDark: { flex: 1, fontFamily: 'Poppins-Bold', fontSize: 14, color: '#111827' },
-  explanationBox: { backgroundColor: '#EFF6FF', borderRadius: 16, padding: 16, marginBottom: spacing.md },
-  explainHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  explainTitle: { fontFamily: 'Poppins-Bold', fontSize: 12, color: colors.brand, letterSpacing: 0.5 },
-  explainText: { fontFamily: 'Poppins-Medium', fontSize: 14, color: '#374151', lineHeight: 22 },
   correctionListTitle: {
     ...typography.sectionTitle,
     color: colors.ink,

@@ -4,6 +4,7 @@ import { decodeJwtExpiry, formatTokenExpiry, isTokenExpired, type AuthExpiredRea
 import { ApiError, type StandardResponse } from './types';
 
 export const AUTH_EXPIRED_EVENT = 'AUTH_EXPIRED';
+export const OFFLINE_REQUEST_FAILED_EVENT = 'OFFLINE_REQUEST_FAILED';
 
 const REQUEST_TIMEOUT_MS = 45_000;
 
@@ -88,6 +89,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     if (e instanceof Error && e.name === 'AbortError') {
       throw new ApiError('Request timed out. Check your connection and try again.', 408);
     }
+    DeviceEventEmitter.emit(OFFLINE_REQUEST_FAILED_EVENT);
     throw new ApiError(e instanceof Error ? e.message : 'Network error', 0);
   } finally {
     clearTimeout(timeoutId);

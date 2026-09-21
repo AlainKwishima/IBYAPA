@@ -308,7 +308,7 @@ export function ExamNativeScreen({ navigation, route }: Props) {
     const elapsedSec = Math.min(EXAM_DURATION_SEC, Math.max(0, Math.round((Date.now() - Date.parse(startedAtRef.current)) / 1000)));
     return {
       mode,
-      title: toExamTitle(mode),
+      title: t(mode === 'signs' ? 'test.signsExamTitle' : 'test.mixedExamTitle'),
       correct,
       total,
       percent,
@@ -320,7 +320,7 @@ export function ExamNativeScreen({ navigation, route }: Props) {
       elapsedSec,
       answerDetails,
     };
-  }, [mode, questions, selectedByQuestion]);
+  }, [mode, questions, selectedByQuestion, t]);
 
   const navigateToResult = useCallback((result: ExamResultParams) => {
     finishedRef.current = true;
@@ -356,7 +356,7 @@ export function ExamNativeScreen({ navigation, route }: Props) {
 
     if (accessToken) {
       void savePerformance(accessToken, {
-        examName: result.title ?? toExamTitle(mode),
+        examName: toExamTitle(mode),
         marks: result.percent ?? 0,
       }).catch((error) => {
         if (__DEV__) console.warn('[Exam] backend performance save failed', error);

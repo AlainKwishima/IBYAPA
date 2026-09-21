@@ -10,6 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ibyapa.app",
+      "buildNumber": "4",
       "infoPlist": {
         "UIRequiresFullScreen": false,
         "ITSAppUsesNonExemptEncryption": false
@@ -26,13 +27,8 @@
     },
     "androidStatusBar": {
       "barStyle": "dark-content",
-      "backgroundColor": "transparent",
+      "backgroundColor": "#F9FAFB",
       "translucent": true
-    },
-    "androidNavigationBar": {
-      "visible": "sticky-immersive",
-      "barStyle": "dark-content",
-      "backgroundColor": "#F9FAFB"
     },
     "web": {
       "favicon": "./assets/favicon.png",
