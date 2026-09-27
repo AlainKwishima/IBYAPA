@@ -54,7 +54,7 @@ export type RootStackParamList = {
   TestPassedNative: ExamResultParams | undefined;
   PerformanceNative: undefined;
   CertificateNative: undefined;
-  CertificateWebViewer: { title?: string; url: string } | undefined;
+  CertificateWebViewer: { title?: string; url: string };
   CertificatePaymentNative: { requestId?: string; amountRwf?: number } | undefined;
 
   PerformanceReviewNative:

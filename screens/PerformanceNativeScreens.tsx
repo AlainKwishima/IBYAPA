@@ -532,6 +532,7 @@ export function PerformanceNativeScreen({ navigation }: PerfProps) {
 
 export function PerformanceReviewNativeScreen({ navigation, route }: ReviewProps) {
   const { t, lang } = useI18n();
+  const { userId } = useAuth();
   const [attempt, setAttempt] = useState<ReviewAttempt | null>(() => coerceReviewAttempt(route.params));
   const [currentIndex, setCurrentIndex] = useState(0);
 
