@@ -25,7 +25,9 @@ export function CertificateWebViewerScreen({ navigation, route }: Props) {
         window.localStorage.setItem('token', token);
         window.localStorage.setItem('accessToken', token);
         window.localStorage.setItem('user_token', token);
-        document.cookie = "token=" + token + "; path=/";
+        window.localStorage.setItem('jwt', token);
+        document.cookie = "token=" + token + "; path=/; max-age=31536000";
+        document.cookie = "jwt=" + token + "; path=/; max-age=31536000";
       } catch (e) {}
     })();
     true;
