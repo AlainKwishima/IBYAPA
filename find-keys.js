@@ -7,10 +7,8 @@ async function run() {
   
   for (const match of scripts) {
     const js = await fetch('https://www.ibyapa.com' + match[1]).then(r => r.text());
-    
-    // Find cookie getters
-    const cookieMatches = [...js.matchAll(/[a-zA-Z0-9_$]+\.get\(['"]([^'"]+)['"]/g)].map(m => m[1]);
-    if (cookieMatches.length) console.log(match[1], 'cookie gets:', Array.from(new Set(cookieMatches)));
+    const gets = js.match(/localStorage\.getItem\(([^)]+)\)/g);
+    if (gets) console.log(match[1], 'gets:', gets);
   }
 }
 run();

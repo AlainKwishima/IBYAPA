@@ -300,17 +300,15 @@ function CertificateEligibilityCard({ certificate, navigation }: { certificate: 
   const requirements = eligibility?.requirements;
   const requestStatus = certificate.request?.status?.toLowerCase();
   const certificateStatus = certificate.certificate?.status?.toLowerCase();
-  const isVisible = Boolean(eligibility?.eligible || requestStatus || certificateStatus);
-
-  if (!isVisible) return null;
-
   const statusKey = certificateStatus === 'issued'
     ? 'performance.certificateIssued'
     : requestStatus === 'under_review'
       ? 'performance.certificateUnderReview'
       : requestStatus === 'pending_payment'
         ? 'performance.certificatePaymentPending'
-        : 'performance.certificateEligible';
+        : eligibility?.eligible
+          ? 'performance.certificateEligible'
+          : 'performance.certificateNotEligible';
 
   return (
     <View style={styles.certificateCard}>
@@ -322,7 +320,7 @@ function CertificateEligibilityCard({ certificate, navigation }: { certificate: 
           <AppText style={styles.certificateTitle}>{t('performance.certificateTitle')}</AppText>
         </View>
         <View style={styles.certificateStatusBadge}>
-          <AppText style={styles.certificateStatusText}>{t(statusKey)}</AppText>
+          <AppText style={styles.certificateStatusText}>{t(statusKey as any)}</AppText>
         </View>
       </View>
       <AppText style={styles.certificateMessage}>
@@ -334,14 +332,18 @@ function CertificateEligibilityCard({ certificate, navigation }: { certificate: 
               ? t('performance.certificatePaymentPendingMessage')
               : t('performance.certificateNotEligibleMessage')}
       </AppText>
-      {eligibility?.eligible && requirements?.minimumExams && requirements.minimumAverage ? (
+      {requirements?.minimumExams && requirements?.minimumAverage ? (
         <AppText style={styles.certificateProgress}>
           {requirements.minimumExams.current ?? 0}/{requirements.minimumExams.required ?? 0} {t('performance.certificateExams')} ·{' '}
-          {requirements.minimumAverage.current ?? 0}% {t('performance.certificateAverage')}
+          {requirements.minimumAverage.current ?? 0}%/{requirements.minimumAverage.required ?? 0}% {t('performance.certificateAverage')}
         </AppText>
       ) : null}
       <TouchableOpacity style={styles.certificateAction} onPress={() => navigation.navigate('CertificateNative')} activeOpacity={0.84}>
-        <AppText style={styles.certificateActionText}>{t('performance.viewCertificate')}</AppText>
+        <AppText style={styles.certificateActionText}>
+          {eligibility?.eligible || requestStatus || certificateStatus
+            ? t('performance.viewCertificate')
+            : t('performance.viewProgress')}
+        </AppText>
         <Ionicons name="arrow-forward" size={18} color={colors.white} />
       </TouchableOpacity>
     </View>

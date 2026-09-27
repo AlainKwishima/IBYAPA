@@ -26,8 +26,44 @@ export function CertificateWebViewerScreen({ navigation, route }: Props) {
         window.localStorage.setItem('accessToken', token);
         window.localStorage.setItem('user_token', token);
         window.localStorage.setItem('jwt', token);
-        document.cookie = "token=" + token + "; path=/; max-age=31536000";
-        document.cookie = "jwt=" + token + "; path=/; max-age=31536000";
+        document.cookie = "token=" + token + "; domain=.ibyapa.com; path=/; max-age=31536000; Secure";
+        document.cookie = "jwt=" + token + "; domain=.ibyapa.com; path=/; max-age=31536000; Secure";
+        // Fallback for current domain just in case
+        document.cookie = "token=" + token + "; path=/; max-age=31536000; Secure";
+        document.cookie = "jwt=" + token + "; path=/; max-age=31536000; Secure";
+
+        // Intercept Fetch
+        var originalFetch = window.fetch;
+        window.fetch = function() {
+          var url = '';
+          if (typeof arguments[0] === 'string') url = arguments[0];
+          else if (arguments[0] && arguments[0].url) url = arguments[0].url;
+
+          if (url.includes('/api/')) {
+            arguments[1] = arguments[1] || {};
+            arguments[1].headers = arguments[1].headers || {};
+            if (arguments[1].headers instanceof Headers || (arguments[1].headers.set && typeof arguments[1].headers.set === 'function')) {
+              arguments[1].headers.set('Authorization', 'Bearer ' + token);
+            } else {
+              arguments[1].headers['Authorization'] = 'Bearer ' + token;
+            }
+          }
+          return originalFetch.apply(this, arguments);
+        };
+
+        // Intercept XHR
+        var originalOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function() {
+          this._url = arguments[1];
+          return originalOpen.apply(this, arguments);
+        };
+        var originalSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.send = function() {
+          if (this._url && this._url.includes('/api/')) {
+            this.setRequestHeader('Authorization', 'Bearer ' + token);
+          }
+          return originalSend.apply(this, arguments);
+        };
       } catch (e) {}
     })();
     true;
