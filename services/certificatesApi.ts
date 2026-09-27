@@ -1,4 +1,5 @@
 import { apiRequest, unwrapApiPayload } from './api/client';
+import { API_BASE_URL } from '../config/api';
 
 export type CertificateRequirement = {
   met?: boolean;
@@ -25,6 +26,8 @@ export type CertificateStatus = {
     rejectionReason?: string;
   } | null;
   certificate?: {
+    id?: string;
+    _id?: string;
     status?: string;
     certificateNumber?: string;
     hasDocument?: boolean;
@@ -111,4 +114,9 @@ export async function checkCertificatePaymentStatus(accessToken: string, reqRef:
   } catch {
     return raw;
   }
+}
+
+/** Build the full URL for downloading a certificate PDF. */
+export function getCertificateDownloadUrl(certificateId: string): string {
+  return `${API_BASE_URL}/api/certificates/${encodeURIComponent(certificateId)}/download`;
 }

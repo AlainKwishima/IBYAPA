@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -22,6 +21,7 @@ import { useI18n } from '../i18n/useI18n';
 import type { RootStackParamList } from '../navigation/types';
 import {
   createCertificateRequest,
+  getCertificateDownloadUrl,
   getMyCertificateStatus,
   reapplyCertificateRequest,
   type CertificateRequirement,
@@ -184,10 +184,13 @@ export function CertificateNativeScreen({ navigation }: Props) {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const openCertificateWebsite = () => {
-    navigation.navigate('CertificateWebViewer', {
+  const openCertificatePdf = () => {
+    const certId = certificate?.certificate?.id || certificate?.certificate?._id || certificate?.certificate?.certificateNumber;
+    if (!certId) return;
+    const url = getCertificateDownloadUrl(certId);
+    navigation.navigate('PdfViewer', {
       title: t('certificate.title'),
-      url: 'https://www.ibyapa.com/certificate',
+      url,
     });
   };
 
@@ -295,7 +298,7 @@ export function CertificateNativeScreen({ navigation }: Props) {
                 {certificate.certificate?.hasDocument ? (
                   <TouchableOpacity
                     style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, marginTop: verticalScale(spacing.xl), paddingVertical: verticalScale(14), borderRadius: radius(radii.md) }}
-                    onPress={openCertificateWebsite}
+                    onPress={openCertificatePdf}
                     activeOpacity={0.86}
                   >
                     <Ionicons name="download" size={scale(18)} color="#FFFFFF" />
