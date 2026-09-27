@@ -1,8 +1,8 @@
 import { AppText } from '../components/AppText';
-import React, { useCallback, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -11,22 +11,19 @@ import { ScreenColumn } from '../components/ScreenColumn';
 import { AppHeader } from '../components/AppHeader';
 import { BottomNavBar } from '../components/BottomNavBar';
 import { SectionHeading } from '../components/SectionHeading';
-import { PdfDocumentIcon } from '../components/PdfDocumentIcon';
-import { SkeletonBlock } from '../components/RequestStates';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n/useI18n';
-import { hasLanguageAccess, resolvePaidContentLanguage } from '../utils/subscriptionAccess';
+import { hasLanguageAccess } from '../utils/subscriptionAccess';
 import { getPerformanceHistory } from '../services/performanceApi';
 import { readLocalExamRecords } from '../services/examHistoryStorage';
 import { mergePerformanceHistory, type PerformanceHistoryRow } from '../services/performanceHistory';
-import { getPdfs, getVideos, type PdfItem, type VideoItem } from '../services/contentApi';
-import { colors, radii, shadows, spacing, typography } from '../constants/theme';
+import { colors, radii, spacing, typography } from '../constants/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HomeNative'>;
-type LearningRoute = 'ExamInstructionsNative' | 'ReadingNative' | 'RoadSigns' | 'VideoCourseList';
+type LearningRoute = 'ExamInstructionsNative' | 'ReadingNative' | 'VideoCourseList' | 'PerformanceNative';
 
 type LearningPath = {
   route: LearningRoute;
@@ -39,6 +36,14 @@ type LearningPath = {
 
 const LEARNING_PATHS: LearningPath[] = [
   {
+    route: 'ExamInstructionsNative',
+    titleKey: 'home.action.exams',
+    subtitleKey: 'home.action.examsSub',
+    icon: 'pencil-outline',
+    color: colors.brandStrong,
+    background: colors.brandSoft,
+  },
+  {
     route: 'ReadingNative',
     titleKey: 'home.action.reading',
     subtitleKey: 'home.action.readingSub',
@@ -48,21 +53,24 @@ const LEARNING_PATHS: LearningPath[] = [
   },
   {
     route: 'VideoCourseList',
-    titleKey: 'video.listTitle',
-    subtitleKey: 'nav.watch',
+    titleKey: 'home.action.videos',
+    subtitleKey: 'home.action.videosSub',
     icon: 'play-circle-outline',
-    color: '#2563EB',
-    background: colors.amberSoft,
+    color: colors.brandStrong,
+    background: colors.brandSoft,
   },
   {
-    route: 'RoadSigns',
-    titleKey: 'home.action.roadSigns',
-    subtitleKey: 'home.action.roadSignsSub',
-    icon: 'sign-caution',
-    color: colors.green,
-    background: colors.greenSoft,
+    route: 'PerformanceNative',
+    titleKey: 'home.action.performance',
+    subtitleKey: 'home.action.performanceSub',
+    icon: 'chart-line',
+    color: colors.brand,
+    background: colors.brandSoft,
   },
 ];
+
+const HOME_EXAM_BANNER_KEY = 'ibyapa.home.exam-banner-dismissed.v1';
+const HOME_EXAM_BANNER_ELIGIBLE_KEY = 'ibyapa.home.exam-banner-eligible.v1';
 
 function getInitials(name?: string | null) {
   if (!name?.trim()) return 'U';
@@ -72,31 +80,13 @@ function getInitials(name?: string | null) {
     : `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-function calculateStreak(history: PerformanceHistoryRow[]) {
-  if (history.length === 0) return 0;
-  const uniqueDays = new Set(
-    history.map((row) => {
-      const day = new Date(row.date);
-      day.setHours(0, 0, 0, 0);
-      return day.getTime();
-    }),
-  );
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  let streak = 0;
-  while (uniqueDays.has(today.getTime())) {
-    streak += 1;
-    today.setDate(today.getDate() - 1);
-  }
-  return streak;
-}
-
 export function HomeNativeScreen({ navigation }: Props) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { tabScrollBottomPad } = useResponsiveLayout();
-  const { accessToken, name } = useAuth();
+  const { accessToken, userId, name } = useAuth();
   const { openGateModal } = useGateModal();
   const {
+    hasUsedFreeTrial,
     hasSubscription,
     canChangeLanguage,
     subscriptionLanguage,
@@ -110,46 +100,76 @@ export function HomeNativeScreen({ navigation }: Props) {
     subscriptionLanguage,
     contentLanguage,
   });
-  const paidContentLanguage = resolvePaidContentLanguage({
-    hasSubscription,
-    canChangeLanguage,
-    subscriptionLanguage,
-    contentLanguage,
-  });
 
   const { data, isPending: loading } = useQuery({
-    queryKey: ['homeData', accessToken, paidContentLanguage],
+    queryKey: ['homeHistory', accessToken],
     queryFn: async () => {
       let fetchedRows: PerformanceHistoryRow[] = [];
-      let fetchedRecommendation: { type: 'pdf' | 'video'; item: PdfItem | VideoItem } | null = null;
       try {
-        const local = await readLocalExamRecords();
+        const local = await readLocalExamRecords(userId);
         if (!accessToken) {
           fetchedRows = mergePerformanceHistory([], local);
-          return { rows: fetchedRows, recommendation: null };
+          return { rows: fetchedRows };
         }
-
-        const [remote, pdfs, videos] = await Promise.all([
-          getPerformanceHistory(accessToken).catch(() => []),
-          paidContentLanguage ? getPdfs(accessToken, paidContentLanguage).catch(() => []) : Promise.resolve([]),
-          paidContentLanguage ? getVideos(accessToken, paidContentLanguage).catch(() => []) : Promise.resolve([]),
-        ]);
+        const remote = await getPerformanceHistory(accessToken).catch(() => []);
         fetchedRows = mergePerformanceHistory(remote, local);
-
-        const newPdf = pdfs.find((item) => (item as PdfItem & { isNew?: boolean }).isNew === true);
-        const newVideo = videos.find((item) => (item as VideoItem & { isNew?: boolean }).isNew === true);
-        fetchedRecommendation = newPdf ? { type: 'pdf', item: newPdf } : newVideo ? { type: 'video', item: newVideo } : null;
       } catch (error) {
         if (__DEV__) console.warn('[Home] failed to load dashboard', error);
-        const local = await readLocalExamRecords();
+        const local = await readLocalExamRecords(userId);
         fetchedRows = mergePerformanceHistory([], local);
       }
-      return { rows: fetchedRows, recommendation: fetchedRecommendation };
+      return { rows: fetchedRows };
     },
   });
 
   const rows = data?.rows ?? [];
-  const recommendation = data?.recommendation ?? null;
+
+  const [examBannerDismissed, setExamBannerDismissed] = useState(false);
+  const [examBannerEligible, setExamBannerEligible] = useState(false);
+  const [examBannerReady, setExamBannerReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setExamBannerReady(false);
+    setExamBannerDismissed(false);
+    setExamBannerEligible(false);
+    if (!userId) {
+      setExamBannerReady(true);
+      return () => {
+        active = false;
+      };
+    }
+
+    void Promise.all([
+      AsyncStorage.getItem(`${HOME_EXAM_BANNER_KEY}.${userId}`),
+      AsyncStorage.getItem(`${HOME_EXAM_BANNER_ELIGIBLE_KEY}.${userId}`),
+    ])
+      .then(([dismissedValue, eligibleValue]) => {
+        if (!active) return;
+        const isNewEligibleUser = !hasSubscription && !hasUsedFreeTrial;
+        const eligible = eligibleValue === 'eligible' || isNewEligibleUser;
+        setExamBannerDismissed(dismissedValue === 'dismissed');
+        setExamBannerEligible(eligible);
+        if (isNewEligibleUser && eligibleValue !== 'eligible') {
+          void AsyncStorage.setItem(`${HOME_EXAM_BANNER_ELIGIBLE_KEY}.${userId}`, 'eligible');
+        }
+        setExamBannerReady(true);
+      })
+      .catch(() => {
+        if (active) setExamBannerReady(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [hasSubscription, hasUsedFreeTrial, userId]);
+
+  const dismissExamBanner = async () => {
+    setExamBannerDismissed(true);
+    if (userId) {
+      await AsyncStorage.setItem(`${HOME_EXAM_BANNER_KEY}.${userId}`, 'dismissed');
+    }
+  };
 
   const handleLearningRoute = (route: LearningRoute) => {
     if (route === 'ExamInstructionsNative') {
@@ -161,28 +181,25 @@ export function HomeNativeScreen({ navigation }: Props) {
       return;
     }
 
-    if (!languageAccessGranted && !isSigningOut) {
+    if ((route === 'ReadingNative' || route === 'VideoCourseList') && !languageAccessGranted && !isSigningOut) {
       openGateModal(route === 'VideoCourseList' ? 'subscription_watch' : 'subscription_read', () =>
         navigation.navigate('SubscriptionNative'),
       );
       return;
     }
-    if (route === 'RoadSigns') {
-      navigation.navigate('ReadingNative', { initialTab: 'signs' });
-      return;
-    }
     navigation.navigate(route);
   };
 
-  const totalExams = rows.length;
-  const average = totalExams ? Math.round(rows.reduce((sum, row) => sum + row.percent, 0) / totalExams) : 0;
-  const passed = rows.filter((row) => row.status === 'PASSED').length;
-  const successRate = totalExams ? Math.round((passed / totalExams) * 100) : 0;
-  const lastExam = rows[0];
-  const streak = calculateStreak(rows);
   const welcome = name?.trim() ? t('home.welcome', { name: name.trim() }) : t('home.welcomeGuest');
-  const recommendationTitle =
-    recommendation?.item.title ?? recommendation?.item.name ?? t('reading.documentFallback');
+  const recentRows = rows.slice(0, 3);
+  const dateLocale = lang === 'rw' ? 'rw-RW' : lang === 'fr' ? 'fr-FR' : 'en-US';
+  const formatExamDate = (value: string) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? value
+      : new Intl.DateTimeFormat(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
+  };
+  const showExamBanner = examBannerReady && examBannerEligible && !examBannerDismissed;
 
   return (
     <ScreenColumn>
@@ -208,159 +225,109 @@ export function HomeNativeScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, { paddingBottom: tabScrollBottomPad + spacing.xl }]}
         >
-          <View style={styles.welcomeRow}>
+          <View style={styles.welcomeCard}>
             <View style={styles.welcomeCopy}>
-              <AppText style={styles.welcome} lines={1}>
+              <AppText
+                style={styles.welcome}
+                lines={2}
+                adjustsFontSizeToFit
+                minimumFontScale={0.82}
+              >
                 {welcome}
               </AppText>
               <AppText style={styles.subwelcome} lines={null}>{t('home.subwelcome')}</AppText>
             </View>
-            {streak > 0 ? (
-              <View style={styles.streakBadge}>
-                <Ionicons name="calendar-outline" size={16} color={colors.brandStrong} />
-                <AppText style={styles.streakText}>{streak}</AppText>
+          </View>
+
+          {showExamBanner ? (
+            <View style={styles.trialBanner}>
+              <View style={styles.trialIcon}>
+                <MaterialCommunityIcons name="steering" size={24} color={colors.white} />
               </View>
-            ) : null}
-          </View>
-
-
-
-          <View style={styles.metricStrip}>
-            <View style={styles.metric}>
-              {loading ? <SkeletonBlock style={{ width: 32, height: 28, borderRadius: 4, marginBottom: 2 }} /> : <AppText style={styles.metricValue}>{totalExams}</AppText>}
-              <AppText style={styles.metricLabel}>{t('performance.totalExams')}</AppText>
-            </View>
-            <View style={styles.metricDivider} />
-            <View style={styles.metric}>
-              {loading ? <SkeletonBlock style={{ width: 44, height: 28, borderRadius: 4, marginBottom: 2 }} /> : <AppText style={styles.metricValue}>{average}%</AppText>}
-              <AppText style={styles.metricLabel}>{t('performance.avgAccuracy')}</AppText>
-            </View>
-            <View style={styles.metricDivider} />
-            <View style={styles.metric}>
-              {loading ? <SkeletonBlock style={{ width: 44, height: 28, borderRadius: 4, marginBottom: 2 }} /> : <AppText style={styles.metricValue}>{successRate}%</AppText>}
-              <AppText style={styles.metricLabel}>{t('performance.successRate')}</AppText>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={styles.primaryAction}
-            onPress={() => handleLearningRoute('ExamInstructionsNative')}
-            activeOpacity={0.88}
-          >
-            <View style={styles.primaryIcon}>
-              <MaterialCommunityIcons name="steering" size={25} color={colors.white} />
-            </View>
-            <View style={styles.primaryCopy}>
-              <AppText style={styles.primaryEyebrow}>{t('home.primaryEyebrow')}</AppText>
-              <AppText style={styles.primaryTitle}>{t('home.action.exams')}</AppText>
-            </View>
-            <View style={styles.primaryArrow}>
-              <Ionicons name="arrow-forward" size={19} color={colors.brandStrong} />
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.sectionGap}>
-            <SectionHeading title={t('home.learningPaths')} />
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.pathList}
-            snapToInterval={292}
-            snapToAlignment="start"
-            decelerationRate="fast"
-            disableIntervalMomentum
-            directionalLockEnabled
-            nestedScrollEnabled
-            alwaysBounceHorizontal
-            scrollEventThrottle={16}
-            accessibilityRole="scrollbar"
-            accessibilityLabel={t('home.learningPaths')}
-          >
-            {LEARNING_PATHS.map((path) => (
               <TouchableOpacity
-                key={path.route}
-                style={styles.pathCard}
-                onPress={() => handleLearningRoute(path.route)}
-                activeOpacity={0.84}
+                style={styles.trialCopy}
+                onPress={() => navigation.navigate('ExamInstructionsNative', { trial: true })}
+                activeOpacity={0.82}
+                accessibilityRole="button"
               >
-                <View style={[styles.pathIcon, { backgroundColor: path.background }]}>
-                  <MaterialCommunityIcons name={path.icon} size={25} color={path.color} />
-                </View>
-                <View style={styles.pathCopy}>
-                  <AppText style={styles.pathTitle} lines={2}>
-                    {t(path.titleKey).replace('\n', ' ')}
-                  </AppText>
-                  <AppText style={styles.pathSubtitle} lines={1}>
-                    {t(path.subtitleKey).replace('\n', ' ')}
-                  </AppText>
-                </View>
-                <Ionicons name="arrow-forward" size={21} color={path.color} />
+                <AppText style={styles.trialEyebrow}>{t('home.trialAvailableTitle')}</AppText>
+                <AppText style={styles.trialTitle} lines={2}>{t('home.action.exams')}</AppText>
+                <AppText style={styles.trialBody} lines={2}>{t('home.trialAvailableBody')}</AppText>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {recommendation ? (
-            <View style={styles.sectionGap}>
-              <SectionHeading title={t('home.recommended')} />
               <TouchableOpacity
-                style={styles.recommendation}
-                onPress={() => handleLearningRoute(recommendation.type === 'pdf' ? 'ReadingNative' : 'VideoCourseList')}
-                activeOpacity={0.85}
+                style={styles.trialClose}
+                onPress={() => void dismissExamBanner()}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={t('home.dismissBanner')}
               >
-                <View style={styles.recommendationIcon}>
-                  {recommendation.type === 'pdf' ? (
-                    <PdfDocumentIcon size={44} />
-                  ) : (
-                    <Ionicons name="play-outline" size={22} color={colors.brand} />
-                  )}
-                </View>
-                <View style={styles.recommendationCopy}>
-                  <AppText style={styles.recommendationLabel}>{t('home.newContent')}</AppText>
-                  <AppText style={styles.recommendationTitle} lines={1}>
-                    {recommendationTitle}
-                  </AppText>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.inkSoft} />
+                <Ionicons name="close" size={19} color={colors.white} />
               </TouchableOpacity>
             </View>
           ) : null}
 
           <View style={styles.sectionGap}>
-            <SectionHeading
-              title={t('home.recentInsight')}
-              action={lastExam ? t('home.viewAll') : undefined}
-              onAction={lastExam ? () => navigation.navigate('PerformanceNative') : undefined}
-            />
-            {lastExam ? (
-              <TouchableOpacity
-                style={styles.insightCard}
-                onPress={() => navigation.navigate('PerformanceNative')}
-                activeOpacity={0.85}
-              >
-                <View
-                  style={[
-                    styles.scoreBadge,
-                    { backgroundColor: lastExam.status === 'PASSED' ? colors.greenSoft : colors.redSoft },
-                  ]}
+            <View style={styles.grid}>
+              {LEARNING_PATHS.map((path) => (
+                <TouchableOpacity
+                  key={path.route}
+                  style={styles.gridCard}
+                  onPress={() => handleLearningRoute(path.route)}
+                  activeOpacity={0.84}
+                  accessibilityRole="button"
+                  accessibilityLabel={t(path.titleKey).replace('\n', ' ')}
                 >
-                  <AppText
-                    style={[
-                      styles.scoreValue,
-                      { color: lastExam.status === 'PASSED' ? colors.green : colors.red },
-                    ]}
-                  >
-                    {lastExam.percent}%
-                  </AppText>
-                </View>
-                <View style={styles.insightCopy}>
-                  <AppText style={styles.insightTitle}>
-                    {lastExam.title.startsWith('performance.') ? t(lastExam.title) : lastExam.title}
-                  </AppText>
-                  <AppText style={styles.insightMeta}>{new Date(lastExam.date).toLocaleDateString()}</AppText>
-                </View>
-                <Ionicons name="trending-up" size={20} color={colors.brand} />
-              </TouchableOpacity>
+                  <View style={styles.gridCardHeader}>
+                    <View style={[styles.gridIcon, { backgroundColor: path.background }]}>
+                      <MaterialCommunityIcons name={path.icon} size={24} color={path.color} />
+                    </View>
+                    <Ionicons name="arrow-forward" size={18} color={path.color} />
+                  </View>
+                  <AppText style={styles.gridTitle} lines={2}>{t(path.titleKey).replace('\n', ' ')}</AppText>
+                  <AppText style={styles.gridSubtitle} lines={3}>{t(path.subtitleKey).replace('\n', ' ')}</AppText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.sectionGap}>
+            <SectionHeading
+              title={t('home.recentActivity')}
+              action={rows.length ? t('home.viewAll') : undefined}
+              onAction={rows.length ? () => navigation.navigate('PerformanceNative') : undefined}
+            />
+            {loading ? (
+              <View style={styles.recentLoading}>
+                <AppText style={styles.recentLoadingText}>{t('common.loading')}</AppText>
+              </View>
+            ) : recentRows.length ? (
+              <View style={styles.recentList}>
+                {recentRows.map((row, index) => {
+                  const passed = row.status === 'PASSED';
+                  const title = row.title.startsWith('performance.') ? t(row.title) : row.title;
+                  return (
+                    <TouchableOpacity
+                      key={`${row.date}-${row.title}-${index}`}
+                      style={styles.recentRow}
+                      onPress={() => navigation.navigate('PerformanceNative')}
+                      activeOpacity={0.84}
+                    >
+                      <View style={[styles.recentScore, { backgroundColor: passed ? colors.greenSoft : colors.redSoft }]}>
+                        <AppText style={[styles.recentScoreText, { color: passed ? colors.green : colors.red }]}>
+                          {row.percent}%
+                        </AppText>
+                      </View>
+                      <View style={styles.recentCopy}>
+                        <AppText style={styles.recentTitle} lines={1}>{title}</AppText>
+                        <AppText style={styles.recentMeta} lines={1}>
+                          {formatExamDate(row.date)} · {t(passed ? 'performance.passed' : 'performance.failed')}
+                        </AppText>
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={colors.inkSoft} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             ) : (
               <View style={styles.emptyInsight}>
                 <Ionicons name="analytics-outline" size={23} color={colors.inkSoft} />
@@ -368,21 +335,6 @@ export function HomeNativeScreen({ navigation }: Props) {
               </View>
             )}
           </View>
-
-          {!hasSubscription ? (
-            <TouchableOpacity
-              style={styles.planBanner}
-              onPress={() => navigation.navigate('SubscriptionNative')}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="sparkles-outline" size={21} color="#2563EB" />
-              <View style={styles.planCopy}>
-                <AppText style={styles.planTitle} lines={2}>{t('gate.subscription.title')}</AppText>
-                <AppText style={styles.planBody}>{t('gate.subscription.exam')}</AppText>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#2563EB" />
-            </TouchableOpacity>
-          ) : null}
         </ScrollView>
       </View>
 
@@ -414,230 +366,135 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
     color: colors.white,
   },
-  welcomeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  welcomeCard: {
     marginBottom: spacing.xl,
+    padding: spacing.lg,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: '#D8E7FB',
+    backgroundColor: colors.blueTint,
   },
   welcomeCopy: {
-    flex: 1,
-    paddingLeft: spacing.xs,
+    minWidth: 0,
   },
   welcome: {
-    ...typography.title,
-    color: colors.ink,
+    fontFamily: 'Poppins-ExtraBold',
+    fontSize: 18,
+    lineHeight: 25,
+    color: colors.darkEmphasis,
   },
   subwelcome: {
-    ...typography.caption,
-    marginTop: 2,
+    ...typography.body,
+    marginTop: spacing.sm,
     color: colors.inkMuted,
   },
-  streakBadge: {
-    minWidth: 44,
-    height: 34,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radii.pill,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    backgroundColor: colors.brandSoft,
-  },
-  streakText: {
-    ...typography.bodyStrong,
-    color: colors.brandStrong,
-  },
-  readinessCard: {
-    minHeight: 110,
-    overflow: 'hidden',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    borderRadius: 14,
-    justifyContent: 'center',
-    backgroundColor: colors.brandStrong,
-    ...shadows.card,
-  },
-  heroTitle: {
-    fontFamily: 'Poppins-ExtraBold',
-    fontSize: 18,
-    lineHeight: 24,
-    letterSpacing: -0.25,
-    color: colors.white,
-  },
-  heroBody: {
-    ...typography.caption,
-    marginTop: 3,
-    maxWidth: 540,
-    color: '#EFF6FF',
-  },
-  bannerStats: {
+  trialBanner: {
+    minHeight: 116,
     marginTop: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  bannerPill: {
-    minHeight: 28,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-  },
-  bannerPillText: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 12,
-    lineHeight: 16,
-    color: colors.white,
-  },
-  metricStrip: {
-    minHeight: 82,
-    marginTop: spacing.md,
-    borderRadius: radii.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  metric: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  metricValue: {
-    fontFamily: 'Poppins-ExtraBold',
-    fontSize: 18,
-    color: colors.ink,
-  },
-  metricLabel: {
-    ...typography.caption,
-    marginTop: 3,
-    fontSize: 10,
-    color: colors.inkSoft,
-    textAlign: 'center',
-  },
-  metricDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: colors.line,
-  },
-  primaryAction: {
-    minHeight: 76,
-    marginTop: spacing.xl,
-    paddingHorizontal: spacing.md,
+    padding: spacing.md,
     borderRadius: radii.xl,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.brand,
-    ...shadows.card,
   },
-  primaryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+  trialIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
   },
-  primaryCopy: {
+  trialCopy: {
     flex: 1,
+    minWidth: 0,
     marginLeft: spacing.md,
+    marginRight: spacing.sm,
   },
-  primaryEyebrow: {
+  trialEyebrow: {
     ...typography.eyebrow,
     color: '#EFF6FF',
     textTransform: 'uppercase',
   },
-  primaryTitle: {
+  trialTitle: {
     ...typography.title,
-    marginTop: 2,
+    marginTop: 1,
     color: colors.white,
   },
-  primaryArrow: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  trialBody: {
+    ...typography.caption,
+    marginTop: 2,
+    color: '#EFF6FF',
+  },
+  trialClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: 'rgba(255,255,255,0.14)',
   },
   sectionGap: {
     marginTop: spacing.xxl,
     gap: spacing.md,
   },
-  pathList: {
-    marginTop: spacing.md,
-    paddingRight: spacing.xl,
-    gap: spacing.md,
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: spacing.md,
   },
-  pathCard: {
-    width: 280,
-    minHeight: 112,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
+  gridCard: {
+    width: '48.2%',
+    minHeight: 178,
+    padding: spacing.md,
     borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.surface,
+  },
+  gridCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  pathIcon: {
-    width: 52,
-    height: 52,
+  gridIcon: {
+    width: 46,
+    height: 46,
     borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pathCopy: {
-    flex: 1,
-    marginHorizontal: spacing.lg,
-  },
-  pathTitle: {
+  gridTitle: {
     ...typography.sectionTitle,
+    marginTop: spacing.sm,
+    fontSize: 16,
+    lineHeight: 22,
     color: colors.ink,
   },
-  pathSubtitle: {
-    ...typography.body,
+  gridSubtitle: {
+    ...typography.caption,
     marginTop: spacing.xs,
     color: colors.inkMuted,
   },
-  recommendation: {
-    minHeight: 72,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.lg,
-    flexDirection: 'row',
+  recentList: {
+    gap: spacing.sm,
+  },
+  recentLoading: {
+    minHeight: 74,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
   },
-  recommendationIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+  recentLoadingText: {
+    ...typography.caption,
+    color: colors.inkMuted,
   },
-  recommendationCopy: {
-    flex: 1,
-    marginHorizontal: spacing.md,
-  },
-  recommendationLabel: {
-    ...typography.eyebrow,
-    color: colors.brand,
-    textTransform: 'uppercase',
-  },
-  recommendationTitle: {
-    ...typography.bodyStrong,
-    marginTop: 2,
-    color: colors.ink,
-  },
-  insightCard: {
-    minHeight: 78,
+  recentRow: {
+    minHeight: 74,
     padding: spacing.md,
     borderRadius: radii.lg,
     flexDirection: 'row',
@@ -646,26 +503,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
-  scoreBadge: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
+  recentScore: {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scoreValue: {
+  recentScoreText: {
     fontFamily: 'Poppins-ExtraBold',
-    fontSize: 15,
+    fontSize: 14,
   },
-  insightCopy: {
+  recentCopy: {
     flex: 1,
+    minWidth: 0,
     marginHorizontal: spacing.md,
   },
-  insightTitle: {
+  recentTitle: {
     ...typography.bodyStrong,
     color: colors.ink,
   },
-  insightMeta: {
+  recentMeta: {
     ...typography.caption,
     marginTop: 3,
     color: colors.inkSoft,
@@ -685,29 +543,5 @@ const styles = StyleSheet.create({
     ...typography.body,
     flex: 1,
     color: colors.inkMuted,
-  },
-  planBanner: {
-    minHeight: 76,
-    marginTop: spacing.xxl,
-    padding: spacing.md,
-    borderRadius: radii.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.amberSoft,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  planCopy: {
-    flex: 1,
-    marginHorizontal: spacing.md,
-  },
-  planTitle: {
-    ...typography.bodyStrong,
-    color: '#1E3A8A',
-  },
-  planBody: {
-    ...typography.caption,
-    marginTop: 3,
-    color: '#374151',
   },
 });

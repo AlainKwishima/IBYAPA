@@ -22,29 +22,30 @@ const GUIDE_KEYS = [
   'examInstructions.guide4',
 ] as const;
 
-export function ExamInstructionsNativeScreen({ navigation }: Props) {
+export function ExamInstructionsNativeScreen({ navigation, route }: Props) {
   const { t } = useI18n();
   const { tabScrollBottomPad } = useResponsiveLayout();
-  const { hasSubscription, isSigningOut } = useAppFlow();
+  const { hasSubscription, hasUsedFreeTrial, isSigningOut } = useAppFlow();
   const { openGateModal } = useGateModal();
+  const trialAccess = route.params?.trial === true && !hasUsedFreeTrial;
 
   useEffect(() => {
-    if (hasSubscription || isSigningOut) return;
+    if (hasSubscription || trialAccess || isSigningOut) return;
     openGateModal(
       'subscription_exam',
       () => navigation.navigate('SubscriptionNative'),
       () => navigation.replace('HomeNative'),
     );
-  }, [hasSubscription, isSigningOut, navigation, openGateModal]);
+  }, [hasSubscription, isSigningOut, navigation, openGateModal, trialAccess]);
 
   const startExam = () => {
-    if (!hasSubscription) {
+    if (!hasSubscription && !trialAccess) {
       if (!isSigningOut) {
         openGateModal('subscription_exam', () => navigation.navigate('SubscriptionNative'));
       }
       return;
     }
-    navigation.navigate('ExamTypeSelectNative');
+    navigation.navigate('ExamTypeSelectNative', trialAccess ? { trial: true } : undefined);
   };
 
   return (

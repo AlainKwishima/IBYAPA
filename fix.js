@@ -1,7 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+const fs = require('fs');
+
+const content = `import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export function getExamStorageKey(userId: string | null | undefined): string {
-  if (userId) return `nkotanyi.examHistory.${userId}.v1`;
+  if (userId) return \`nkotanyi.examHistory.\${userId}.v1\`;
   return 'nkotanyi.examHistory.guest.v1';
 }
 
@@ -58,9 +60,12 @@ export async function appendLocalExamRecord(
   const prev = await readLocalExamRecords(userId);
   const record: LocalExamRecord = {
     ...entry,
-    id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+    id: \`local_\${Date.now()}_\${Math.random().toString(36).slice(2, 9)}\`,
     createdAt: new Date().toISOString(),
   };
   const next = [record, ...prev].slice(0, MAX_RECORDS);
   await AsyncStorage.setItem(getExamStorageKey(userId), JSON.stringify(next));
 }
+`;
+
+fs.writeFileSync('services/examHistoryStorage.ts', content);

@@ -14,6 +14,7 @@ import { SkeletonBlock } from '../components/RequestStates';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAuth } from '../context/AuthContext';
 import { getPerformanceHistory } from '../services/performanceApi';
+import { getMyCertificateStatus, type CertificateStatus } from '../services/certificatesApi';
 import { readLocalExamRecords } from '../services/examHistoryStorage';
 import { mapLocalExamRecord, mergePerformanceHistory, type PerformanceHistoryRow } from '../services/performanceHistory';
 import { getMessageFromUnknownError } from '../services/api/client';
@@ -26,6 +27,7 @@ type ReviewProps = NativeStackScreenProps<RootStackParamList, 'PerformanceReview
 
 type ReviewAttempt = NonNullable<PerformanceHistoryRow>;
 const REVIEW_OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F'];
+const PERFORMANCE_PAGE_SIZE = 10;
 
 function coerceReviewAttempt(params?: ReviewProps['route']['params']): ReviewAttempt | null {
   if (!params) return null;
@@ -292,26 +294,96 @@ function PerformanceSummary({ rows }: { rows: PerformanceHistoryRow[] }) {
   );
 }
 
+function CertificateEligibilityCard({ certificate, navigation }: { certificate: CertificateStatus; navigation: PerfProps['navigation'] }) {
+  const { t } = useI18n();
+  const eligibility = certificate.eligibility;
+  const requirements = eligibility?.requirements;
+  const requestStatus = certificate.request?.status?.toLowerCase();
+  const certificateStatus = certificate.certificate?.status?.toLowerCase();
+  const isVisible = Boolean(eligibility?.eligible || requestStatus || certificateStatus);
+
+  if (!isVisible) return null;
+
+  const statusKey = certificateStatus === 'issued'
+    ? 'performance.certificateIssued'
+    : requestStatus === 'under_review'
+      ? 'performance.certificateUnderReview'
+      : requestStatus === 'pending_payment'
+        ? 'performance.certificatePaymentPending'
+        : 'performance.certificateEligible';
+
+  return (
+    <View style={styles.certificateCard}>
+      <View style={styles.certificateCardTop}>
+        <View style={styles.certificateTitleRow}>
+          <View style={styles.certificateIconCircle}>
+            <Ionicons name="ribbon" size={18} color={colors.brand} />
+          </View>
+          <AppText style={styles.certificateTitle}>{t('performance.certificateTitle')}</AppText>
+        </View>
+        <View style={styles.certificateStatusBadge}>
+          <AppText style={styles.certificateStatusText}>{t(statusKey)}</AppText>
+        </View>
+      </View>
+      <AppText style={styles.certificateMessage}>
+        {eligibility?.eligible
+          ? t('performance.certificateEligibleMessage')
+          : requestStatus === 'under_review'
+            ? t('performance.certificateUnderReviewMessage')
+            : requestStatus === 'pending_payment'
+              ? t('performance.certificatePaymentPendingMessage')
+              : t('performance.certificateNotEligibleMessage')}
+      </AppText>
+      {eligibility?.eligible && requirements?.minimumExams && requirements.minimumAverage ? (
+        <AppText style={styles.certificateProgress}>
+          {requirements.minimumExams.current ?? 0}/{requirements.minimumExams.required ?? 0} {t('performance.certificateExams')} ·{' '}
+          {requirements.minimumAverage.current ?? 0}% {t('performance.certificateAverage')}
+        </AppText>
+      ) : null}
+      <TouchableOpacity style={styles.certificateAction} onPress={() => navigation.navigate('CertificateNative')} activeOpacity={0.84}>
+        <AppText style={styles.certificateActionText}>{t('performance.viewCertificate')}</AppText>
+        <Ionicons name="arrow-forward" size={18} color={colors.white} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function HistoryBackground({
   navigation,
   rows,
+  certificate,
   loading,
   loadError,
   onRetry,
 }: {
   navigation: PerfProps['navigation'];
   rows: PerformanceHistoryRow[];
+  certificate: CertificateStatus | null;
   loading: boolean;
   loadError: string | null;
   onRetry: () => void;
 }) {
   const { t } = useI18n();
   const { tabScrollBottomPad } = useResponsiveLayout();
+  const [page, setPage] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(rows.length / PERFORMANCE_PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageStart = safePage * PERFORMANCE_PAGE_SIZE;
+  const pageRows = rows.slice(pageStart, pageStart + PERFORMANCE_PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(0);
+  }, [rows]);
+
+  const goToPreviousPage = () => setPage((current) => Math.max(0, current - 1));
+  const goToNextPage = () => setPage((current) => Math.min(pageCount - 1, current + 1));
+
   return (
     <>
       <TopHeader title={t('performance.title')} onBack={() => navigation.goBack()} navigation={navigation} />
       <View style={styles.body}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.listPad, { paddingBottom: tabScrollBottomPad }]}>
+          {certificate ? <CertificateEligibilityCard certificate={certificate} navigation={navigation} /> : null}
           {loading && rows.length === 0 ? <PerformanceSummarySkeleton /> : <PerformanceSummary rows={rows} />}
 
           <View style={styles.sectionHeader}>
@@ -341,11 +413,11 @@ function HistoryBackground({
               </View>
               {loading && rows.length === 0
                 ? Array.from({ length: 4 }).map((_, idx) => <HistoryRowSkeleton key={idx} />)
-                : rows.map((item, idx) => (
+              : pageRows.map((item, idx) => (
                 <HistoryCard
                   key={item.id}
                   item={item}
-                  index={idx}
+                  index={pageStart + idx}
                   onPress={() =>
                     navigation.navigate('PerformanceReviewNative', {
                       correct: item.correct,
@@ -364,6 +436,37 @@ function HistoryBackground({
                   }
                 />
               ))}
+            </View>
+          ) : null}
+          {rows.length > PERFORMANCE_PAGE_SIZE ? (
+            <View style={styles.paginationControls}>
+              <TouchableOpacity
+                accessibilityLabel={t('performance.previousPage')}
+                accessibilityRole="button"
+                disabled={safePage === 0}
+                onPress={goToPreviousPage}
+                style={[styles.paginationButton, safePage === 0 && styles.paginationButtonDisabled]}
+              >
+                <Ionicons name="chevron-back" size={18} color={safePage === 0 ? colors.inkSoft : colors.brand} />
+                <AppText style={[styles.paginationButtonText, safePage === 0 && styles.paginationButtonTextDisabled]}>
+                  {t('performance.previousPage')}
+                </AppText>
+              </TouchableOpacity>
+              <AppText style={styles.paginationLabel}>
+                {pageStart + 1}-{Math.min(pageStart + PERFORMANCE_PAGE_SIZE, rows.length)} {t('common.of')} {rows.length}
+              </AppText>
+              <TouchableOpacity
+                accessibilityLabel={t('performance.nextPage')}
+                accessibilityRole="button"
+                disabled={safePage >= pageCount - 1}
+                onPress={goToNextPage}
+                style={[styles.paginationButton, styles.paginationButtonNext, safePage >= pageCount - 1 && styles.paginationButtonDisabled]}
+              >
+                <AppText style={[styles.paginationButtonText, styles.paginationButtonTextNext, safePage >= pageCount - 1 && styles.paginationButtonTextDisabled]}>
+                  {t('performance.nextPage')}
+                </AppText>
+                <Ionicons name="chevron-forward" size={18} color={safePage >= pageCount - 1 ? colors.inkSoft : colors.white} />
+              </TouchableOpacity>
             </View>
           ) : null}
         </ScrollView>
@@ -387,13 +490,13 @@ function ProgressRow({ title, value }: { title: string; value: number }) {
 }
 
 export function PerformanceNativeScreen({ navigation }: PerfProps) {
-  const { accessToken } = useAuth();
+  const { accessToken, userId } = useAuth();
   const { data: rows = [], isPending: loading, error, refetch } = useQuery({
     queryKey: ['performanceHistory', accessToken],
     queryFn: async () => {
       let fetchedRows: PerformanceHistoryRow[] = [];
       try {
-        const local = await readLocalExamRecords();
+        const local = await readLocalExamRecords(userId);
         if (!accessToken) {
           fetchedRows = mergePerformanceHistory([], local);
           return fetchedRows;
@@ -401,12 +504,19 @@ export function PerformanceNativeScreen({ navigation }: PerfProps) {
         const remote = await getPerformanceHistory(accessToken);
         fetchedRows = mergePerformanceHistory(remote, local);
       } catch (e) {
-        const local = await readLocalExamRecords();
+        const local = await readLocalExamRecords(userId);
         fetchedRows = mergePerformanceHistory([], local);
         throw e;
       }
       return fetchedRows;
     },
+  });
+  const { data: certificate = null } = useQuery({
+    queryKey: ['certificateStatus', accessToken],
+    enabled: Boolean(accessToken),
+    retry: false,
+    staleTime: 60 * 1000,
+    queryFn: () => getMyCertificateStatus(accessToken as string),
   });
 
   const loadError = error ? getMessageFromUnknownError(error) : null;
@@ -414,7 +524,7 @@ export function PerformanceNativeScreen({ navigation }: PerfProps) {
 
   return (
     <ScreenColumn>
-      <HistoryBackground navigation={navigation} rows={rows} loading={loading} loadError={loadError} onRetry={load} />
+      <HistoryBackground navigation={navigation} rows={rows} certificate={certificate} loading={loading} loadError={loadError} onRetry={load} />
       <BottomTabs navigation={navigation} />
     </ScreenColumn>
   );
@@ -438,7 +548,7 @@ export function PerformanceReviewNativeScreen({ navigation, route }: ReviewProps
     }
 
     const loadLatest = async () => {
-      const local = await readLocalExamRecords();
+      const local = await readLocalExamRecords(userId);
       if (cancelled) return;
       const latest = local[0] ? mapLocalExamRecord(local[0]) : null;
       setAttempt(latest);
@@ -808,12 +918,124 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-ExtraBold',
     color: colors.danger,
   },
+  certificateCard: {
+    marginBottom: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: radii.xl,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.brand,
+    ...shadows.subtle,
+  },
+  certificateCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  certificateTitleRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  certificateIconCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandSoft,
+  },
+  certificateTitle: {
+    ...typography.bodyStrong,
+    color: colors.ink,
+  },
+  certificateStatusBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.pill,
+    backgroundColor: colors.brandSoft,
+  },
+  certificateStatusText: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 10,
+    lineHeight: 14,
+    color: colors.brandStrong,
+  },
+  certificateMessage: {
+    marginTop: spacing.sm,
+    ...typography.caption,
+    color: colors.inkMuted,
+  },
+  certificateProgress: {
+    marginTop: spacing.xs,
+    ...typography.caption,
+    color: colors.brandStrong,
+  },
+  certificateAction: {
+    minHeight: 44,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.brand,
+  },
+  certificateActionText: {
+    ...typography.bodyStrong,
+    color: colors.white,
+  },
   sectionHeader: {
     marginTop: spacing.xs,
     marginBottom: spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  paginationControls: {
+    marginTop: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  paginationButton: {
+    minHeight: 44,
+    minWidth: 44,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radii.pill,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    backgroundColor: colors.brandSoft,
+  },
+  paginationButtonNext: {
+    backgroundColor: colors.brand,
+  },
+  paginationButtonDisabled: {
+    backgroundColor: colors.surfaceAlt,
+  },
+  paginationButtonText: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 12,
+    color: colors.brand,
+  },
+  paginationButtonTextNext: {
+    color: colors.white,
+  },
+  paginationButtonTextDisabled: {
+    color: colors.inkSoft,
+  },
+  paginationLabel: {
+    flex: 1,
+    fontFamily: 'Poppins-Bold',
+    fontSize: 12,
+    textAlign: 'center',
+    color: colors.inkMuted,
   },
   sectionTitle: { ...typography.title, color: colors.ink },
   refreshBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },

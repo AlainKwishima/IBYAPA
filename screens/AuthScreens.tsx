@@ -791,6 +791,7 @@ const styles = StyleSheet.create({
   },
   contactTextContent: {
     marginLeft: 16,
+    flex: 1,
   },
   contactLabel: {
     fontFamily: 'Poppins-SemiBold',

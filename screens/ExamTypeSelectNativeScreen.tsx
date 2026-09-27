@@ -15,20 +15,21 @@ import { colors, radii, spacing, typography } from '../constants/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ExamTypeSelectNative'>;
 
-export function ExamTypeSelectNativeScreen({ navigation }: Props) {
+export function ExamTypeSelectNativeScreen({ navigation, route }: Props) {
   const { t } = useI18n();
   const { tabScrollBottomPad } = useResponsiveLayout();
-  const { hasSubscription, isSigningOut } = useAppFlow();
+  const { hasSubscription, hasUsedFreeTrial, isSigningOut } = useAppFlow();
   const { openGateModal } = useGateModal();
+  const trialAccess = route.params?.trial === true && !hasUsedFreeTrial;
 
   useEffect(() => {
-    if (hasSubscription || isSigningOut) return;
+    if (hasSubscription || trialAccess || isSigningOut) return;
     openGateModal(
       'subscription_exam',
       () => navigation.navigate('SubscriptionNative'),
       () => navigation.replace('HomeNative'),
     );
-  }, [hasSubscription, isSigningOut, navigation, openGateModal]);
+  }, [hasSubscription, isSigningOut, navigation, openGateModal, trialAccess]);
 
   const examTypes = [
     {
@@ -52,13 +53,13 @@ export function ExamTypeSelectNativeScreen({ navigation }: Props) {
   ];
 
   const selectExam = (mode: 'traffic' | 'signs') => {
-    if (!hasSubscription) {
+    if (!hasSubscription && !trialAccess) {
       if (!isSigningOut) {
         openGateModal('subscription_exam', () => navigation.navigate('SubscriptionNative'));
       }
       return;
     }
-    navigation.navigate('ExamNative', { mode });
+    navigation.navigate('ExamNative', { mode, trial: trialAccess });
   };
 
   return (

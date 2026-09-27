@@ -43,16 +43,19 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   ResetPassword: undefined;
   HomeNative: undefined;
-  ExamNative: { mode?: ExamMode } | undefined;
-  ExamInstructionsNative: undefined;
+  ExamNative: { mode?: ExamMode; trial?: boolean } | undefined;
+  ExamInstructionsNative: { trial?: boolean } | undefined;
 
-  ExamTypeSelectNative: undefined;
+  ExamTypeSelectNative: { trial?: boolean } | undefined;
   StartExamNative: { gateFor?: 'exam' | 'read' | 'watch' } | undefined;
   PracticeNoSelectedNative: undefined;
   PracticeSelectedNative: undefined;
   TestFailedNative: ExamResultParams | undefined;
   TestPassedNative: ExamResultParams | undefined;
   PerformanceNative: undefined;
+  CertificateNative: undefined;
+  CertificateWebViewer: { title?: string; url: string } | undefined;
+  CertificatePaymentNative: { requestId?: string; amountRwf?: number } | undefined;
 
   PerformanceReviewNative:
     | {

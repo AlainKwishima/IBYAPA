@@ -48,8 +48,8 @@ const PAYMENT_METHODS: Array<{ key: PaymentMethodLogoKey; labelKey: 'payment.met
 type SubscriptionProps = NativeStackScreenProps<RootStackParamList, 'SubscriptionNative'>;
 type PaymentProps = NativeStackScreenProps<RootStackParamList, 'PaymentNative'>;
 type Nav = SubscriptionProps['navigation'] | PaymentProps['navigation'];
-type PaymentStatusKind = 'processing' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
-type PaymentStatusModalState = {
+export type PaymentStatusKind = 'processing' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
+export type PaymentStatusModalState = {
   kind: PaymentStatusKind;
   title: string;
   message?: string;
@@ -69,7 +69,7 @@ function BottomTabs({ navigation }: { navigation: Nav }) {
   return <BottomNavBar navigation={navigation} />;
 }
 
-function PaymentStatusModal({
+export function PaymentStatusModal({
   state,
   onDismiss,
 }: {
@@ -638,24 +638,6 @@ export function SubscriptionNativeScreen({ navigation }: SubscriptionProps) {
   const [activePlanIndex, setActivePlanIndex] = useState(0);
   const planActionLabel = hasSubscription ? t('payment.renewOrChangePlan') : t('payment.startNow');
 
-  if (Platform.OS === 'ios') {
-    return (
-      <ScreenColumn>
-        <Header title={t('subscription.title')} onBack={() => navigation.goBack()} navigation={navigation} />
-        <View style={[styles.body, { justifyContent: 'center', paddingHorizontal: 32 }]}>
-          <Ionicons name="information-circle-outline" size={48} color={colors.inkMuted} style={{ alignSelf: 'center', marginBottom: 20 }} />
-          <AppText style={{ textAlign: 'center', fontSize: 16, color: colors.ink, fontFamily: 'Poppins-SemiBold' }}>
-            Subscription Available Online
-          </AppText>
-          <AppText style={{ textAlign: 'center', fontSize: 14, color: colors.inkMuted, marginTop: 12 }} lines={null}>
-            Due to App Store guidelines, purchasing digital subscriptions is not currently supported directly within the iOS app.
-            {'\n\n'}
-            Please visit our website at ibyapa.com on your web browser to view plans and manage your subscription.
-          </AppText>
-        </View>
-      </ScreenColumn>
-    );
-  }
 
   return (
     <ScreenColumn>

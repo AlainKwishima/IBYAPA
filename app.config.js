@@ -11,6 +11,7 @@ module.exports = ({ config }) => ({
       enableBackgroundRecording: false,
       enableBackgroundPlayback: false,
     }],
+    'expo-sharing',
   ],
   owner: 'aln.k',
   extra: {

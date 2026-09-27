@@ -17,7 +17,6 @@ import {
   profileSubscriptionSummary,
   type SubscriptionSummary,
 } from '../services/userApi';
-import { phoneForSignupApi } from '../utils/phone';
 import { navigationRef } from '../navigation/navigationRef';
 import { clearLegacyAsyncStorageKeys, deleteSecureValue, getSecureJson, setSecureJson } from '../services/secureStorage';
 import { clearRememberedCredentials } from '../services/rememberedCredentials';
@@ -101,8 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setName(u.name);
       setPhone(u.phone);
-      if (typeof u.hasAttemptedTrial === 'boolean' && u.hasAttemptedTrial) {
-        await setHasUsedFreeTrial(true);
+      if (typeof u.hasAttemptedTrial === 'boolean') {
+        await setHasUsedFreeTrial(u.hasAttemptedTrial);
       }
       const sub = profileIndicatesActiveSubscription(profile);
       const timeBased = profileHasTimeBasedSubscription(profile);
@@ -146,10 +145,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await setSignedIn(false);
       await setHasSubscription(false);
       await setHasTimeBasedSubscription(false);
+      await setHasUsedFreeTrial(false);
       await setCanChangeLanguage(false);
       await setSubscriptionLanguage(null);
     },
-    [setCanChangeLanguage, setHasSubscription, setHasTimeBasedSubscription, setSignedIn, setSubscriptionLanguage],
+    [setCanChangeLanguage, setHasSubscription, setHasTimeBasedSubscription, setHasUsedFreeTrial, setSignedIn, setSubscriptionLanguage],
   );
 
   const scheduleTokenExpiryCheck = useCallback(
@@ -297,9 +297,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = useCallback(
     async (fullName: string, phoneRaw: string, password: string) => {
-      const phoneDigits = phoneForSignupApi(phoneRaw);
-      await signupRequest(fullName, phoneDigits, password.trim(), contentLanguage);
-      await login(phoneRaw, password.trim());
+      const phoneClean = phoneRaw.replace(/\s+/g, '');
+      await signupRequest(fullName, phoneClean, password.trim(), contentLanguage);
+      await login(phoneClean, password.trim());
     },
     [contentLanguage, login],
   );
@@ -318,6 +318,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await clearRememberedCredentials();
     await setSignedIn(false);
     await setHasSubscription(false);
+    await setHasUsedFreeTrial(false);
     await setCanChangeLanguage(false);
     await setHasTimeBasedSubscription(false);
     await setSubscriptionLanguage(null);
@@ -331,7 +332,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         /* ignore */
       }
     }
-  }, [accessToken, setCanChangeLanguage, setHasSubscription, setHasTimeBasedSubscription, setSignedIn, setSigningOut, setSubscriptionLanguage]);
+  }, [accessToken, setCanChangeLanguage, setHasSubscription, setHasTimeBasedSubscription, setHasUsedFreeTrial, setSignedIn, setSigningOut, setSubscriptionLanguage]);
 
   useEffect(() => {
     logoutRef.current = logout;

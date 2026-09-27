@@ -142,7 +142,7 @@ export function ExamNativeScreen({ navigation, route }: Props) {
     contentLanguage,
     isSigningOut,
   } = useAppFlow();
-  const { accessToken } = useAuth();
+  const { accessToken, userId } = useAuth();
   const { openGateModal } = useGateModal();
   const mode = route.params?.mode ?? 'traffic';
   const examLanguage = resolveExamLanguage({
@@ -349,7 +349,7 @@ export function ExamNativeScreen({ navigation, route }: Props) {
         elapsedSec: result.elapsedSec,
         answeredCount: result.answeredCount,
         answers: result.answerDetails ?? [],
-      });
+      }, userId);
     } catch (error) {
       if (__DEV__) console.warn('[Exam] local performance save failed', error);
     }

@@ -26,6 +26,9 @@ import { LanguageSelectionScreen } from './screens/LanguageSelectionScreen';
 import { LanguageSettingsScreen } from './screens/LanguageSettingsScreen';
 import { PracticeNoSelectedNativeScreen, PracticeSelectedNativeScreen } from './screens/PracticeNativeScreen';
 import { PerformanceNativeScreen, PerformanceReviewNativeScreen } from './screens/PerformanceNativeScreens';
+import { CertificateNativeScreen } from './screens/CertificateNativeScreen';
+import { CertificateWebViewerScreen } from './screens/CertificateWebViewerScreen';
+import { CertificatePaymentNativeScreen } from './screens/CertificatePaymentNativeScreen';
 import { HelpCenterNativeScreen } from './screens/LearningNativeScreens';
 import { PaymentNativeScreen, SubscriptionNativeScreen } from './screens/PaymentNativeScreens';
 import { ProfileNativeScreen } from './screens/ProfileNativeScreen';
@@ -129,6 +132,9 @@ function RootNavigator() {
         <Stack.Screen name="TestFailedNative" component={TestFailedNativeScreen} />
         <Stack.Screen name="TestPassedNative" component={TestPassedNativeScreen} />
         <Stack.Screen name="PerformanceNative" component={PerformanceNativeScreen} options={mainTabScreenOptions} />
+        <Stack.Screen name="CertificateNative" component={CertificateNativeScreen} />
+        <Stack.Screen name="CertificateWebViewer" component={CertificateWebViewerScreen} />
+        <Stack.Screen name="CertificatePaymentNative" component={CertificatePaymentNativeScreen} />
         <Stack.Screen name="PerformanceReviewNative" component={PerformanceReviewNativeScreen} />
         <Stack.Screen name="ReadingNative" component={ReadingNativeScreen} options={mainTabScreenOptions} />
         <Stack.Screen name="HelpCenterNative" component={HelpCenterNativeScreen} />
