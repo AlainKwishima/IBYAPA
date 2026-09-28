@@ -16,7 +16,6 @@ const PLAN_ORDER: SubscriptionType[] = ['monthly', 'two-weekly', 'weekly', 'dail
 
 const FALLBACK_PRICING_MATRIX: BackendPricingMatrix = {
   rw: {
-    'two-exams': 300,
     'five-exams': 500,
     daily: 2000,
     weekly: 5000,
@@ -164,7 +163,7 @@ export async function fetchLiveSubscriptionPlans(
 ): Promise<LiveSubscriptionPlan[]> {
   const matrix = await fetchBackendPricingMatrix();
   const bucket = matrix[languageBucket(contentLanguage)];
-  return PLAN_ORDER.map((subscriptionType) => {
+  return PLAN_ORDER.filter((subscriptionType) => !(contentLanguage === 'rw' && subscriptionType === 'two-exams')).map((subscriptionType) => {
     const amountRwf = bucket[subscriptionType];
     if (typeof amountRwf !== 'number' || !Number.isFinite(amountRwf) || amountRwf <= 0) {
       return null;

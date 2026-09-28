@@ -1,9 +1,11 @@
 import { AppText } from '../components/AppText';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 import { RootStackParamList } from '../navigation/types';
 import { AppHeader } from '../components/AppHeader';
@@ -429,6 +431,57 @@ export function PdfViewerScreen({ navigation, route }: Props) {
   const [progressLabel, setProgressLabel] = useState(t('pdf.preparing'));
   const [loadVersion, setLoadVersion] = useState(0);
   const [hasReadablePage, setHasReadablePage] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      const fileName = (title || 'certificate').replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf';
+      const destination = new FileSystem.File(FileSystem.Paths.cache, fileName);
+
+      // Remove any previously cached copy so the download doesn't fail with DestinationAlreadyExists
+      if (destination.exists) {
+        destination.delete();
+      }
+
+      const downloadedFile = await FileSystem.File.downloadFileAsync(url, destination, {
+        headers: accessToken
+          ? { Authorization: `Bearer ${accessToken}`, token: `Bearer ${accessToken}` }
+          : undefined,
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(downloadedFile.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: title || 'Certificate',
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        Alert.alert(t('common.error'), 'Sharing is not available on this device.');
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Export failed';
+      Alert.alert(t('common.error'), message);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [accessToken, isExporting, title, url, t]);
+
+  const shareButton = previewState === 'ready' ? (
+    <TouchableOpacity
+      style={styles.shareBtn}
+      onPress={handleExport}
+      activeOpacity={0.7}
+      disabled={isExporting}
+    >
+      {isExporting ? (
+        <ActivityIndicator size="small" color={colors.white} />
+      ) : (
+        <Ionicons name="share-outline" size={22} color={colors.white} />
+      )}
+    </TouchableOpacity>
+  ) : null;
 
   const sourceHtml = useMemo(
     () => buildSecurePreviewHtml(url, title || 'Document', accessToken),
@@ -555,7 +608,7 @@ export function PdfViewerScreen({ navigation, route }: Props) {
 
   return (
     <ScreenColumn>
-      <AppHeader title={title || t('pdf.document')} onBack={() => navigation.goBack()} />
+      <AppHeader title={title || t('pdf.document')} onBack={() => navigation.goBack()} right={shareButton} />
 
       <View style={styles.bodyWrap}>
         {IS_WEB ? (
@@ -727,5 +780,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
     fontSize: 14,
     color: '#FFFFFF',
+  },
+  shareBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

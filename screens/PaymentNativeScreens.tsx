@@ -233,18 +233,36 @@ const PLAN_TITLE_KEYS: Record<SubscriptionType, string> = {
   'two-exams': 'payment.plan.twoExams',
 };
 
-const PLAN_FEATURES: Record<SubscriptionType, string[]> = {
-  'monthly': ['payment.feature.unlimited', 'payment.feature.duration30d', 'payment.feature2', 'payment.feature3'],
-  'two-weekly': ['payment.feature.unlimited', 'payment.feature.duration14d', 'payment.feature2'],
-  'weekly': ['payment.feature.unlimited', 'payment.feature.duration7d', 'payment.feature2'],
-  'daily': ['payment.feature.unlimited', 'payment.feature.duration24h', 'payment.feature2'],
-  'five-exams': ['payment.feature.exams5', 'payment.feature.duration24h'],
-  'two-exams': ['payment.feature.exams2', 'payment.feature.duration24h'],
+const PLAN_FEATURES_BY_LANGUAGE: Record<'rw' | 'en_fr', Record<SubscriptionType, string[]>> = {
+  rw: {
+    monthly: ['payment.feature.unlimited', 'payment.feature.videoAccess', 'payment.feature.readingAccess', 'payment.feature.duration30d'],
+    'two-weekly': ['payment.feature.unlimited', 'payment.feature.videoAccess', 'payment.feature.readingAccess', 'payment.feature.duration14d'],
+    weekly: ['payment.feature.unlimited', 'payment.feature.videoAccess', 'payment.feature.readingAccess', 'payment.feature.duration7d'],
+    daily: ['payment.feature.unlimited', 'payment.feature.videoAccess', 'payment.feature.readingAccess', 'payment.feature.duration24h'],
+    'five-exams': ['payment.feature.exams5', 'payment.feature.noVideo', 'payment.feature.noReading', 'payment.feature.attempts5'],
+    'two-exams': ['payment.feature.exams2', 'payment.feature.noVideo', 'payment.feature.noReading', 'payment.feature.attempts2'],
+  },
+  en_fr: {
+    monthly: ['payment.feature.unlimited', 'payment.feature.readingAccess', 'payment.feature.duration30d'],
+    'two-weekly': ['payment.feature.unlimited', 'payment.feature.readingAccess', 'payment.feature.duration14d'],
+    weekly: ['payment.feature.unlimited', 'payment.feature.readingAccess', 'payment.feature.duration7d'],
+    daily: ['payment.feature.unlimited', 'payment.feature.duration24h'],
+    'five-exams': ['payment.feature.exams5', 'payment.feature.noVideo', 'payment.feature.noReading', 'payment.feature.attempts5'],
+    'two-exams': ['payment.feature.exams2', 'payment.feature.noVideo', 'payment.feature.noReading', 'payment.feature.attempts2'],
+  },
+};
+
+const PLAN_DESCRIPTION_KEYS: Record<SubscriptionType, string> = {
+  monthly: 'payment.planDescription.month',
+  'two-weekly': 'payment.planDescription.twoWeeks',
+  weekly: 'payment.planDescription.week',
+  daily: 'payment.planDescription.day',
+  'five-exams': 'payment.planDescription.fiveExams',
+  'two-exams': 'payment.planDescription.twoExams',
 };
 
 const PRICE_BY_LANGUAGE: Record<'rw' | 'en_fr', Partial<Record<SubscriptionType, number>>> = {
   rw: {
-    'two-exams': 300,
     'five-exams': 500,
     daily: 2000,
     weekly: 5000,
@@ -538,6 +556,7 @@ function buildPaymentProbe(
 function PlanCard({
   plan,
   title,
+  description,
   featureTexts,
   actionLabel,
   isActive,
@@ -546,6 +565,7 @@ function PlanCard({
 }: {
   plan: Plan;
   title: string;
+  description?: string;
   featureTexts?: string[];
   actionLabel: string;
   isActive?: boolean;
@@ -560,6 +580,7 @@ function PlanCard({
         <View style={{ flex: 1 }}>
           {isActive ? <AppText style={styles.bestValue}>{t('payment.bestValue').toUpperCase()}</AppText> : null}
           <AppText style={[styles.planTitle, isActive && styles.planTitleActive]} lines={2}>{title}</AppText>
+          {description ? <AppText style={[styles.planDescription, isActive && styles.planDescriptionActive]} lines={3}>{description}</AppText> : null}
         </View>
         <View style={styles.planPriceCol}>
           <AppText style={[styles.planPrice, isActive && styles.planPriceActive]}>{plan.price}</AppText>
@@ -677,7 +698,8 @@ export function SubscriptionNativeScreen({ navigation }: SubscriptionProps) {
                 plan={plan}
                 isActive={index === activePlanIndex}
                 title={t(PLAN_TITLE_KEYS[plan.subscriptionType])}
-                featureTexts={PLAN_FEATURES[plan.subscriptionType].map((k) => t(k))}
+                description={t(PLAN_DESCRIPTION_KEYS[plan.subscriptionType])}
+                featureTexts={PLAN_FEATURES_BY_LANGUAGE[contentLanguage === 'rw' ? 'rw' : 'en_fr'][plan.subscriptionType].map((k) => t(k))}
                 actionLabel={planActionLabel}
                 onPress={() =>
                   navigation.navigate('PaymentNative', {
@@ -1614,6 +1636,14 @@ const styles = StyleSheet.create({
   },
   planTitle: { ...typography.title, fontSize: 20, color: colors.ink },
   planTitleActive: { color: '#FFFFFF' },
+  planDescription: {
+    marginTop: 6,
+    fontFamily: 'Poppins-Regular',
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.inkMuted,
+  },
+  planDescriptionActive: { color: '#EFF6FF' },
   planPriceCol: { alignItems: 'flex-end' },
   planPriceRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 2 },
   planPrice: { ...typography.display, fontSize: 32, color: colors.ink },
