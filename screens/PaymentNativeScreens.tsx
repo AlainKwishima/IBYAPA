@@ -16,7 +16,6 @@ import { useAppFlow } from '../context/AppFlowContext';
 import { useAuth } from '../context/AuthContext';
 import {
   checkPaymentStatus,
-  getMyRecentPayment,
   initiateAirtelPayment,
   initiateCardPayment,
   initiateMomoPayment,
@@ -758,7 +757,6 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
   const [checkingPending, setCheckingPending] = useState(false);
   const [statusModal, setStatusModal] = useState<PaymentStatusModalState | null>(null);
   const autoResumeKeyRef = useRef<string | null>(null);
-  const recentRecoveryKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -795,13 +793,7 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
   );
   const fallbackCardPhone = profilePhone ? toLocalRwandaPhone(profilePhone.replace(/^250/, '0')) : null;
 
-  useEffect(() => {
-    if (profilePhone) {
-      const local = toLocalRwandaPhone(profilePhone.replace(/^250/, '0'));
-      if (local) setPhoneInput(local);
-      else setPhoneInput(profilePhone);
-    }
-  }, [profilePhone]);
+  // Auto-fill removed by user request
 
   useEffect(() => {
     setFieldErrors({});
@@ -1085,68 +1077,6 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
     }
     return false;
   };
-
-  const recoverRecentPaymentFromBackend = async () => {
-    if (!accessToken || checkingPending || payBusy) return;
-    const since = pendingPayment?.createdAt ? Date.parse(pendingPayment.createdAt) : undefined;
-    const safeSince = typeof since === 'number' && Number.isFinite(since) ? since : undefined;
-    const recoveryKey = `${userId ?? 'anon'}:${pendingPayment?.reqRef ?? 'none'}:${safeSince ?? 'latest'}`;
-    if (recentRecoveryKeyRef.current === recoveryKey) return;
-    recentRecoveryKeyRef.current = recoveryKey;
-
-    setCheckingPending(true);
-    try {
-      const recentPayload = await getMyRecentPayment(accessToken, safeSince);
-      if (!recentPayload) return;
-
-      const reqRef = extractReqRef(recentPayload);
-      const nextCheckoutUrl = extractCheckoutLink(recentPayload);
-      const receipt = extractPaymentReceipt(recentPayload, paymentLanguage);
-
-      if (looksLikeSuccessfulPayment(recentPayload)) {
-        await finalizeSuccessfulPayment(receipt);
-        return;
-      }
-
-      if (resolvePaymentStatus(recentPayload) === 'cancelled' || resolvePaymentStatus(recentPayload) === 'failed') {
-        await clearPendingState();
-        return;
-      }
-
-      if ((looksLikePendingPayment(recentPayload) || nextCheckoutUrl) && reqRef) {
-        const record: PendingPaymentRecord = {
-          reqRef,
-          method,
-          subscriptionType,
-          amountRwf,
-          language: paymentLanguage,
-          planTitle,
-          createdAt: new Date().toISOString(),
-          orderId: receipt.orderId,
-          checkoutUrl: nextCheckoutUrl,
-          phone: fallbackCardPhone,
-          userId,
-        };
-        await savePendingPayment(record);
-        setPendingPayment(record);
-        setCheckoutUrl(nextCheckoutUrl ?? null);
-      }
-    } catch (e: any) {
-      if (__DEV__) {
-        // Suppress 404 warning if the backend doesn't implement this endpoint
-        if (e && e.status !== 404 && e.statusCode !== 404 && !e.message?.includes('<!DOCTYPE html>')) {
-          console.warn('[Payment] recent payment recovery failed', getMessageFromUnknownError(e));
-        }
-      }
-    } finally {
-      setCheckingPending(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!accessToken || payBusy) return;
-    void recoverRecentPaymentFromBackend();
-  }, [accessToken, pendingPayment?.createdAt, pendingPayment?.reqRef, payBusy]);
 
   useEffect(() => {
     if (!pendingPayment || !accessToken || payBusy || checkingPending || pendingPayment.checkoutUrl) return;
