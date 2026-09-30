@@ -191,6 +191,7 @@ export function CertificateNativeScreen({ navigation }: Props) {
     navigation.navigate('PdfViewer', {
       title: t('certificate.title'),
       url,
+      allowExport: true,
     });
   };
 

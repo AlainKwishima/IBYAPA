@@ -104,5 +104,5 @@ export type RootStackParamList = {
       }
     | undefined;
   HelpCenter: undefined;
-  PdfViewer: { title: string; url: string };
+  PdfViewer: { title: string; url: string; allowExport?: boolean };
 };

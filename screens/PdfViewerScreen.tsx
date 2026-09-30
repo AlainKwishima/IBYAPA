@@ -421,7 +421,7 @@ function safeDocumentDiagnostics(rawUrl: string) {
 }
 
 export function PdfViewerScreen({ navigation, route }: Props) {
-  const { title, url } = route.params;
+  const { title, url, allowExport } = route.params;
   const { t } = useI18n();
   const { accessToken } = useAuth();
   const webViewRef = useRef<WebView>(null);
@@ -468,7 +468,7 @@ export function PdfViewerScreen({ navigation, route }: Props) {
     }
   }, [accessToken, isExporting, title, url, t]);
 
-  const shareButton = previewState === 'ready' ? (
+  const shareButton = allowExport && previewState === 'ready' ? (
     <TouchableOpacity
       style={styles.shareBtn}
       onPress={handleExport}
