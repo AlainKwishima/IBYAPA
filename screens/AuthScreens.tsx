@@ -1,7 +1,7 @@
 import { AppText } from '../components/AppText';
 import React, { useEffect, useRef, useState } from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -128,6 +128,24 @@ export function LoginScreen({ navigation, route }: LoginProps) {
     }
   }, [navigation, route.params, t]);
 
+  if (busy) {
+    return (
+      <SafeAreaView style={styles.loginLoading} edges={['top', 'left', 'right', 'bottom']}>
+        <Image source={FIGMA_ASSETS.brandingLogo} style={styles.loginLoadingLogo} resizeMode="contain" />
+        <AppText style={styles.loginLoadingTitle}>{t('language.brand')}</AppText>
+        <ActivityIndicator
+          size="large"
+          color={colors.brand}
+          style={styles.loginLoadingIndicator}
+          accessible
+          accessibilityRole="progressbar"
+          accessibilityLabel={t('common.loading')}
+        />
+        <AppText style={styles.loginLoadingMessage}>{t('common.loading')}</AppText>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.root, { paddingHorizontal: m.sideGutter, alignItems: 'center' }]} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView
@@ -201,8 +219,6 @@ export function LoginScreen({ navigation, route }: LoginProps) {
             }
           }}
         />
-        {busy ? <SkeletonBlock style={styles.authBusySkeleton} /> : null}
-
         <Pressable style={styles.forgotLinkWrap} onPress={() => navigation.navigate('ForgotPassword')}>
           <AppText style={styles.forgotLink}>{t('auth.forgot')}</AppText>
         </Pressable>
@@ -535,6 +551,32 @@ export function ResetPasswordScreen({ navigation }: ResetPasswordProps) {
 }
 
 const styles = StyleSheet.create({
+  loginLoading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.canvas,
+    paddingHorizontal: 24,
+  },
+  loginLoadingLogo: {
+    width: 112,
+    height: 112,
+  },
+  loginLoadingTitle: {
+    marginTop: 12,
+    color: colors.ink,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  loginLoadingIndicator: {
+    marginTop: 28,
+  },
+  loginLoadingMessage: {
+    marginTop: 10,
+    color: colors.inkMuted,
+    fontSize: 13,
+    textAlign: 'center',
+  },
   root: {
     flex: 1,
     backgroundColor: colors.canvas,

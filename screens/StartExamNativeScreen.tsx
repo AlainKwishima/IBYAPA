@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
 import { RootStackParamList } from '../navigation/types';
-import { hasLanguageAccess } from '../utils/subscriptionAccess';
+import { hasExamAccess, hasReadingAccess, hasVideoAccess } from '../utils/subscriptionAccess';
 import { colors } from '../constants/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StartExamNative'>;
@@ -14,15 +14,31 @@ export function StartExamNativeScreen({ navigation, route }: Props) {
   const openedRef = useRef(false);
   const {
     hasSubscription,
+    canTakeExams,
+    hasReadingAccess: readingEntitlement,
+    hasVideoAccess: videoEntitlement,
     canChangeLanguage,
     subscriptionLanguage,
     contentLanguage,
     isSigningOut,
   } = useAppFlow();
   const { openGateModal } = useGateModal();
-  const languageAccessGranted = hasLanguageAccess({
+  const examAccessGranted = hasExamAccess({
     hasSubscription,
+    canTakeExams,
     canChangeLanguage,
+    subscriptionLanguage,
+    contentLanguage,
+  });
+  const readingAccessGranted = hasReadingAccess({
+    hasSubscription,
+    hasReadingAccess: readingEntitlement,
+    subscriptionLanguage,
+    contentLanguage,
+  });
+  const videoAccessGranted = hasVideoAccess({
+    hasSubscription,
+    hasVideoAccess: videoEntitlement,
     subscriptionLanguage,
     contentLanguage,
   });
@@ -34,8 +50,10 @@ export function StartExamNativeScreen({ navigation, route }: Props) {
     const gateFor = route.params?.gateFor ?? 'exam';
     const requiresSubscription =
       gateFor === 'exam'
-        ? !hasSubscription || !languageAccessGranted
-        : !languageAccessGranted;
+        ? !examAccessGranted
+        : gateFor === 'read'
+          ? !readingAccessGranted
+          : !videoAccessGranted;
 
     if (!requiresSubscription && gateFor === 'read') {
       navigation.replace('ReadingNative');
@@ -77,7 +95,7 @@ export function StartExamNativeScreen({ navigation, route }: Props) {
         () => navigation.goBack(),
       );
     }
-  }, [hasSubscription, isSigningOut, languageAccessGranted, navigation, openGateModal, route.params?.gateFor]);
+  }, [examAccessGranted, isSigningOut, navigation, openGateModal, readingAccessGranted, route.params?.gateFor, videoAccessGranted]);
 
   return <View style={styles.blank} />;
 }

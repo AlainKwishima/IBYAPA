@@ -16,7 +16,7 @@ import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n/useI18n';
-import { hasLanguageAccess } from '../utils/subscriptionAccess';
+import { hasExamAccess, hasReadingAccess, hasVideoAccess } from '../utils/subscriptionAccess';
 import { getPerformanceHistory } from '../services/performanceApi';
 import { readLocalExamRecords } from '../services/examHistoryStorage';
 import { mergePerformanceHistory, type PerformanceHistoryRow } from '../services/performanceHistory';
@@ -88,14 +88,32 @@ export function HomeNativeScreen({ navigation }: Props) {
   const {
     hasUsedFreeTrial,
     hasSubscription,
+    canTakeExams,
+    hasReadingAccess: readingEntitlement,
+    hasVideoAccess: videoEntitlement,
     canChangeLanguage,
     subscriptionLanguage,
     contentLanguage,
     isSigningOut,
   } = useAppFlow();
 
-  const languageAccessGranted = hasLanguageAccess({
+  const examAccessGranted = hasExamAccess({
     hasSubscription,
+    canTakeExams,
+    canChangeLanguage,
+    subscriptionLanguage,
+    contentLanguage,
+  });
+  const readingAccessGranted = hasReadingAccess({
+    hasSubscription,
+    hasReadingAccess: readingEntitlement,
+    canChangeLanguage,
+    subscriptionLanguage,
+    contentLanguage,
+  });
+  const videoAccessGranted = hasVideoAccess({
+    hasSubscription,
+    hasVideoAccess: videoEntitlement,
     canChangeLanguage,
     subscriptionLanguage,
     contentLanguage,
@@ -173,7 +191,7 @@ export function HomeNativeScreen({ navigation }: Props) {
 
   const handleLearningRoute = (route: LearningRoute) => {
     if (route === 'ExamInstructionsNative') {
-      if (!isSigningOut && (!hasSubscription || !languageAccessGranted)) {
+      if (!isSigningOut && !examAccessGranted) {
         openGateModal('subscription_exam', () => navigation.navigate('SubscriptionNative'));
         return;
       }
@@ -181,10 +199,14 @@ export function HomeNativeScreen({ navigation }: Props) {
       return;
     }
 
-    if ((route === 'ReadingNative' || route === 'VideoCourseList') && !languageAccessGranted && !isSigningOut) {
-      openGateModal(route === 'VideoCourseList' ? 'subscription_watch' : 'subscription_read', () =>
+    if (route === 'ReadingNative' && !readingAccessGranted && !isSigningOut) {
+      openGateModal('subscription_read', () =>
         navigation.navigate('SubscriptionNative'),
       );
+      return;
+    }
+    if (route === 'VideoCourseList' && !videoAccessGranted && !isSigningOut) {
+      openGateModal('subscription_watch', () => navigation.navigate('SubscriptionNative'));
       return;
     }
     navigation.navigate(route);

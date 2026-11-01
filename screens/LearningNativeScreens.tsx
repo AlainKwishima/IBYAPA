@@ -22,8 +22,9 @@ import { getPdfsWithFallback, type PdfItem } from '../services/contentApi';
 import { getRoadSigns, markRoadSignViewed, type RoadSignStudyItem } from '../services/roadSignsApi';
 import { ApiError } from '../services/api/types';
 import { useI18n } from '../i18n/useI18n';
-import { hasLanguageAccess, resolvePaidContentLanguage } from '../utils/subscriptionAccess';
+import { hasReadingAccess, resolvePaidContentLanguage } from '../utils/subscriptionAccess';
 import { colors, radii, shadows, spacing, typography } from '../constants/theme';
+import { TABLET_COLUMN_MAX } from '../utils/layoutMetrics';
 import { SUPPORT_CONTACT } from '../constants/support';
 
 type ReadProps = NativeStackScreenProps<RootStackParamList, 'ReadingNative'>;
@@ -321,6 +322,7 @@ export function ReadingNativeScreen({ navigation, route }: ReadProps) {
   const { accessToken } = useAuth();
   const {
     hasSubscription,
+    hasReadingAccess: readingEntitlement,
     canChangeLanguage,
     subscriptionLanguage,
     contentLanguage,
@@ -332,8 +334,9 @@ export function ReadingNativeScreen({ navigation, route }: ReadProps) {
   const [selectedRoadSignIndex, setSelectedRoadSignIndex] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const languageAccessGranted = hasLanguageAccess({
+  const readingAccessGranted = hasReadingAccess({
     hasSubscription,
+    hasReadingAccess: readingEntitlement,
     canChangeLanguage,
     subscriptionLanguage,
     contentLanguage,
@@ -348,10 +351,10 @@ export function ReadingNativeScreen({ navigation, route }: ReadProps) {
   const { data: pdfData, isPending: loading, error: pdfQueryError, refetch: refetchPdfs } = useQuery({
     queryKey: ['pdfs', accessToken, paidContentLanguage],
     queryFn: async () => {
-      if (!accessToken || !paidContentLanguage || !languageAccessGranted) return null;
+      if (!accessToken || !paidContentLanguage || !readingAccessGranted) return null;
       return await getPdfsWithFallback(accessToken, paidContentLanguage);
     },
-    enabled: !!accessToken && !!paidContentLanguage && languageAccessGranted,
+    enabled: !!accessToken && !!paidContentLanguage && readingAccessGranted,
   });
 
   const pdfs = pdfData?.items ?? [];
@@ -367,10 +370,10 @@ export function ReadingNativeScreen({ navigation, route }: ReadProps) {
   const { data: roadSignsData, isPending: roadSignsLoading, error: roadSignsQueryError, refetch: refetchRoadSigns } = useQuery({
     queryKey: ['roadSigns', accessToken, paidContentLanguage],
     queryFn: async () => {
-      if (!accessToken || !paidContentLanguage || !languageAccessGranted) return null;
+      if (!accessToken || !paidContentLanguage || !readingAccessGranted) return null;
       return await getRoadSigns(accessToken, paidContentLanguage);
     },
-    enabled: !!accessToken && !!paidContentLanguage && languageAccessGranted,
+    enabled: !!accessToken && !!paidContentLanguage && readingAccessGranted,
   });
 
   const roadSigns = roadSignsData?.items ?? [];
@@ -380,10 +383,10 @@ export function ReadingNativeScreen({ navigation, route }: ReadProps) {
   const loadRoadSigns = () => { void refetchRoadSigns(); };
 
   useEffect(() => {
-    if (!languageAccessGranted && !isSigningOut) {
+    if (!readingAccessGranted && !isSigningOut) {
       openGateModal('subscription_read', () => navigation.navigate('SubscriptionNative'));
     }
-  }, [isSigningOut, languageAccessGranted, navigation, openGateModal]);
+  }, [isSigningOut, navigation, openGateModal, readingAccessGranted]);
 
   useEffect(() => {
     if (route.params?.initialTab) {
@@ -628,12 +631,34 @@ export function ReadingNativeScreen({ navigation, route }: ReadProps) {
 export function HelpCenterNativeScreen({ navigation }: HelpProps) {
   const { t } = useI18n();
   const { tabScrollBottomPad } = useResponsiveLayout();
+  const { deleteAccount } = useAuth();
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const faqs = [t('reading.faq1'), t('reading.faq2'), t('reading.faq3'), t('reading.faq4')];
 
   const handleWhatsApp = () => {
     Linking.openURL(SUPPORT_CONTACT.whatsappUrl).catch(() => {
       Alert.alert(t('common.error'), t('reading.whatsappError'));
     });
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(t('profile.deleteAccountTitle'), t('profile.deleteAccountConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('profile.deleteAccountTitle'),
+        style: 'destructive',
+        onPress: async () => {
+          if (isDeletingAccount) return;
+          setIsDeletingAccount(true);
+          try {
+            await deleteAccount();
+          } catch {
+            setIsDeletingAccount(false);
+            Alert.alert(t('common.error'), t('profile.deleteAccountFailed'));
+          }
+        },
+      },
+    ]);
   };
 
   return (
@@ -686,6 +711,21 @@ export function HelpCenterNativeScreen({ navigation }: HelpProps) {
                 <AppText style={styles.faqText}>{question}</AppText>
               </View>
             ))}
+          </View>
+          <View style={styles.deleteAccountCard}>
+            <AppText style={styles.deleteAccountTitle}>{t('profile.deleteAccountTitle')}</AppText>
+            <AppText style={styles.deleteAccountDescription}>{t('profile.deleteAccountHelp')}</AppText>
+            <TouchableOpacity
+              style={[styles.deleteAccountButton, isDeletingAccount && styles.deleteAccountButtonDisabled]}
+              onPress={handleDeleteAccount}
+              activeOpacity={0.84}
+              disabled={isDeletingAccount}
+            >
+              <Ionicons name="trash-outline" size={19} color={colors.danger} />
+              <AppText style={styles.deleteAccountButtonText}>
+                {isDeletingAccount ? t('common.loading') : t('profile.deleteAccountTitle')}
+              </AppText>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
@@ -777,16 +817,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   readingLoaderFrame: {
-    width: 164,
-    height: 164,
+    width: 144,
+    height: 144,
+    marginTop: spacing.sm,
     borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.brandStrong,
   },
   readingLoaderAnimation: {
-    width: 148,
-    height: 148,
+    width: 128,
+    height: 128,
   },
   readingLoaderText: {
     ...typography.bodyStrong,
@@ -931,6 +971,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(23, 34, 56, 0.46)',
   },
   detailSheet: {
+    width: '100%',
+    maxWidth: TABLET_COLUMN_MAX,
+    alignSelf: 'center',
     maxHeight: '86%',
     borderRadius: 18,
     backgroundColor: colors.surface,
@@ -1207,5 +1250,40 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: spacing.md,
     color: colors.ink,
+  },
+  deleteAccountCard: {
+    marginTop: spacing.xxl,
+    padding: spacing.lg,
+    borderRadius: radii.xl,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.dangerSoft,
+  },
+  deleteAccountTitle: {
+    ...typography.sectionTitle,
+    color: colors.ink,
+  },
+  deleteAccountDescription: {
+    ...typography.caption,
+    marginTop: spacing.xs,
+    color: colors.inkMuted,
+  },
+  deleteAccountButton: {
+    minHeight: 48,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.dangerSoft,
+  },
+  deleteAccountButtonText: {
+    ...typography.bodyStrong,
+    marginLeft: spacing.sm,
+    color: colors.danger,
+  },
+  deleteAccountButtonDisabled: {
+    opacity: 0.6,
   },
 });

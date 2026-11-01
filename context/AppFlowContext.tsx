@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { SubscriptionType } from '../services/api/subscriptionTypes';
 
 export type ContentLanguageCode = 'en' | 'rw' | 'fr';
 
@@ -8,9 +9,13 @@ type AppFlowState = {
   isSignedIn: boolean;
   hasUsedFreeTrial: boolean;
   hasSubscription: boolean;
+  canTakeExams: boolean;
+  hasReadingAccess: boolean;
+  hasVideoAccess: boolean;
   hasTimeBasedSubscription: boolean;
   canChangeLanguage: boolean;
   subscriptionLanguage: ContentLanguageCode | null;
+  subscriptionPlan: SubscriptionType | null;
   contentLanguage: ContentLanguageCode;
 };
 
@@ -21,9 +26,13 @@ type AppFlowContextValue = AppFlowState & {
   setSignedIn: (signedIn: boolean) => Promise<void>;
   setHasUsedFreeTrial: (used: boolean) => Promise<void>;
   setHasSubscription: (subscribed: boolean) => Promise<void>;
+  setCanTakeExams: (allowed: boolean) => Promise<void>;
+  setHasReadingAccess: (allowed: boolean) => Promise<void>;
+  setHasVideoAccess: (allowed: boolean) => Promise<void>;
   setHasTimeBasedSubscription: (subscribed: boolean) => Promise<void>;
   setCanChangeLanguage: (allowed: boolean) => Promise<void>;
   setSubscriptionLanguage: (lang: ContentLanguageCode | null) => Promise<void>;
+  setSubscriptionPlan: (plan: SubscriptionType | null) => Promise<void>;
   setContentLanguage: (lang: ContentLanguageCode) => Promise<void>;
   setSigningOut: (signingOut: boolean) => void;
   /** First-run language: one persist so sequential updates cannot clobber each other. */
@@ -38,9 +47,13 @@ const defaultState: AppFlowState = {
   isSignedIn: false,
   hasUsedFreeTrial: false,
   hasSubscription: false,
+  canTakeExams: false,
+  hasReadingAccess: false,
+  hasVideoAccess: false,
   hasTimeBasedSubscription: false,
   canChangeLanguage: false,
   subscriptionLanguage: null,
+  subscriptionPlan: null,
   contentLanguage: 'en',
 };
 
@@ -75,11 +88,23 @@ export function AppFlowProvider({ children }: { children: React.ReactNode }) {
             isSignedIn: Boolean(parsed.isSignedIn),
             hasUsedFreeTrial: Boolean(parsed.hasUsedFreeTrial),
             hasSubscription: Boolean(parsed.hasSubscription),
+            canTakeExams: Boolean(parsed.canTakeExams),
+            hasReadingAccess: Boolean(parsed.hasReadingAccess),
+            hasVideoAccess: Boolean(parsed.hasVideoAccess),
             hasTimeBasedSubscription: Boolean(parsed.hasTimeBasedSubscription),
             canChangeLanguage: Boolean(parsed.canChangeLanguage),
             subscriptionLanguage:
               parsed.subscriptionLanguage === 'rw' || parsed.subscriptionLanguage === 'fr' || parsed.subscriptionLanguage === 'en'
                 ? parsed.subscriptionLanguage
+                : null,
+            subscriptionPlan:
+              parsed.subscriptionPlan === 'two-exams' ||
+              parsed.subscriptionPlan === 'five-exams' ||
+              parsed.subscriptionPlan === 'daily' ||
+              parsed.subscriptionPlan === 'weekly' ||
+              parsed.subscriptionPlan === 'two-weekly' ||
+              parsed.subscriptionPlan === 'monthly'
+                ? parsed.subscriptionPlan
                 : null,
             contentLanguage:
               parsed.contentLanguage === 'rw' || parsed.contentLanguage === 'fr' ? parsed.contentLanguage : 'en',
@@ -102,10 +127,21 @@ export function AppFlowProvider({ children }: { children: React.ReactNode }) {
       persistPatch(
         subscribed
           ? { hasSubscription: true }
-          : { hasSubscription: false, canChangeLanguage: false, subscriptionLanguage: null },
+          : {
+              hasSubscription: false,
+              canTakeExams: false,
+              hasReadingAccess: false,
+              hasVideoAccess: false,
+              canChangeLanguage: false,
+              subscriptionLanguage: null,
+              subscriptionPlan: null,
+            },
       ),
     [persistPatch],
   );
+  const setCanTakeExams = useCallback((allowed: boolean) => persistPatch({ canTakeExams: allowed }), [persistPatch]);
+  const setHasReadingAccess = useCallback((allowed: boolean) => persistPatch({ hasReadingAccess: allowed }), [persistPatch]);
+  const setHasVideoAccess = useCallback((allowed: boolean) => persistPatch({ hasVideoAccess: allowed }), [persistPatch]);
   const setHasTimeBasedSubscription = useCallback(
     (subscribed: boolean) => persistPatch({ hasTimeBasedSubscription: subscribed }),
     [persistPatch],
@@ -113,6 +149,10 @@ export function AppFlowProvider({ children }: { children: React.ReactNode }) {
   const setCanChangeLanguage = useCallback((allowed: boolean) => persistPatch({ canChangeLanguage: allowed }), [persistPatch]);
   const setSubscriptionLanguage = useCallback(
     (lang: ContentLanguageCode | null) => persistPatch({ subscriptionLanguage: lang }),
+    [persistPatch],
+  );
+  const setSubscriptionPlan = useCallback(
+    (plan: SubscriptionType | null) => persistPatch({ subscriptionPlan: plan }),
     [persistPatch],
   );
   const setContentLanguage = useCallback((lang: ContentLanguageCode) => persistPatch({ contentLanguage: lang }), [persistPatch]);
@@ -136,9 +176,13 @@ export function AppFlowProvider({ children }: { children: React.ReactNode }) {
       setSignedIn,
       setHasUsedFreeTrial,
       setHasSubscription,
+      setCanTakeExams,
+      setHasReadingAccess,
+      setHasVideoAccess,
       setHasTimeBasedSubscription,
       setCanChangeLanguage,
       setSubscriptionLanguage,
+      setSubscriptionPlan,
       setContentLanguage,
       setSigningOut,
       commitLanguageSelection,
@@ -152,9 +196,13 @@ export function AppFlowProvider({ children }: { children: React.ReactNode }) {
       setSignedIn,
       setHasUsedFreeTrial,
       setHasSubscription,
+      setCanTakeExams,
+      setHasReadingAccess,
+      setHasVideoAccess,
       setHasTimeBasedSubscription,
       setCanChangeLanguage,
       setSubscriptionLanguage,
+      setSubscriptionPlan,
       setContentLanguage,
       setSigningOut,
       commitLanguageSelection,

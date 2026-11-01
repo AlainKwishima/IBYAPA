@@ -13,6 +13,31 @@ import { colors, radii, shadows, spacing, typography } from '../constants/theme'
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const SUCCESS_SOUND = require('../assets/sounds/exam-success.wav');
+const CONFETTI_COLORS = ['#2563EB', '#EF4444', '#F59E0B', '#06B6D4', '#8B5CF6', '#10B981'];
+
+type ConfettiPieceConfig = {
+  color: string;
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+  rotation: number;
+  delay: number;
+};
+
+const CONFETTI_PIECES: ConfettiPieceConfig[] = Array.from({ length: 34 }, (_, index) => {
+  const angle = -Math.PI + (index / 33) * Math.PI;
+  const distance = 92 + (index % 6) * 28;
+  return {
+    color: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
+    width: index % 3 === 0 ? 7 : 5,
+    height: index % 2 === 0 ? 13 : 9,
+    x: Math.cos(angle) * distance,
+    y: 120 + Math.sin(angle) * distance * 0.55 + (index % 5) * 28,
+    rotation: (index % 2 === 0 ? 1 : -1) * (180 + (index % 4) * 90),
+    delay: (index % 5) * 45,
+  };
+});
 
 
 type FailedProps = NativeStackScreenProps<RootStackParamList, 'TestFailedNative'>;
@@ -70,6 +95,59 @@ function ScoreRing({ passed, percent }: { passed: boolean; percent: number }) {
         <Text style={styles.ringValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>{percent}</Text>
         <Text style={styles.ringPercent}>%</Text>
       </View>
+    </View>
+  );
+}
+
+function ConfettiPiece({ piece }: { piece: ConfettiPieceConfig }) {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.sequence([
+      Animated.delay(piece.delay),
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: 1700,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]);
+    animation.start();
+    return () => {
+      animation.stop();
+    };
+  }, [piece.delay, progress]);
+
+  const opacity = progress.interpolate({
+    inputRange: [0, 0.15, 0.78, 1],
+    outputRange: [0, 1, 1, 0],
+  });
+  const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [0, piece.x] });
+  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [0, piece.y] });
+  const rotate = progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${piece.rotation}deg`] });
+
+  return (
+    <Animated.View
+      style={[
+        styles.confettiPiece,
+        {
+          width: piece.width,
+          height: piece.height,
+          backgroundColor: piece.color,
+          opacity,
+          transform: [{ translateX }, { translateY }, { rotate }],
+        },
+      ]}
+    />
+  );
+}
+
+function ConfettiBurst() {
+  return (
+    <View pointerEvents="none" style={styles.confettiLayer}>
+      {CONFETTI_PIECES.map((piece, index) => (
+        <ConfettiPiece key={`${piece.color}-${index}`} piece={piece} />
+      ))}
     </View>
   );
 }
@@ -142,6 +220,7 @@ function ResultTemplate({
       />
 
       <View style={styles.body}>
+        {passed ? <ConfettiBurst /> : null}
         <Animated.View
           style={[
             styles.content,
@@ -262,6 +341,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.canvas,
     overflow: 'hidden',
+  },
+  confettiLayer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 5,
+    alignItems: 'center',
+    paddingTop: '22%',
+  },
+  confettiPiece: {
+    position: 'absolute',
+    top: '22%',
+    left: '50%',
+    borderRadius: 2,
   },
   content: {
     flex: 1,

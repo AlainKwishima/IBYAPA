@@ -26,7 +26,7 @@ import { appendLocalExamRecord } from '../services/examHistoryStorage';
 import { savePerformance } from '../services/performanceApi';
 import { getMessageFromUnknownError } from '../services/api/client';
 import { useI18n } from '../i18n/useI18n';
-import { hasLanguageAccess, resolveExamLanguage } from '../utils/subscriptionAccess';
+import { hasExamAccess, resolveExamLanguage } from '../utils/subscriptionAccess';
 import { colors, radii, shadows, spacing, typography } from '../constants/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ExamNative'>;
@@ -137,6 +137,7 @@ export function ExamNativeScreen({ navigation, route }: Props) {
   const { t } = useI18n();
   const {
     hasSubscription,
+    canTakeExams,
     canChangeLanguage,
     subscriptionLanguage,
     contentLanguage,
@@ -150,8 +151,9 @@ export function ExamNativeScreen({ navigation, route }: Props) {
     subscriptionLanguage,
     contentLanguage,
   });
-  const languageAccessGranted = hasLanguageAccess({
+  const examAccessGranted = hasExamAccess({
     hasSubscription,
+    canTakeExams,
     canChangeLanguage,
     subscriptionLanguage,
     contentLanguage,
@@ -175,7 +177,7 @@ export function ExamNativeScreen({ navigation, route }: Props) {
   const finishedRef = useRef(false);
   const timeoutSubmittedRef = useRef(false);
   const hasSubscriptionRef = useRef(hasSubscription);
-  const languageAccessGrantedRef = useRef(languageAccessGranted);
+  const examAccessGrantedRef = useRef(examAccessGranted);
 
   const totalQuestions = questions.length;
   const current = questions[questionIndex];
@@ -190,11 +192,11 @@ export function ExamNativeScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     hasSubscriptionRef.current = hasSubscription;
-    languageAccessGrantedRef.current = languageAccessGranted;
-  }, [hasSubscription, languageAccessGranted]);
+    examAccessGrantedRef.current = examAccessGranted;
+  }, [examAccessGranted, hasSubscription]);
 
   const loadQuestions = useCallback(async () => {
-    if (!hasSubscriptionRef.current || !languageAccessGrantedRef.current) {
+    if (!hasSubscriptionRef.current || !examAccessGrantedRef.current) {
       setQuestions([]);
       setLoadError(t('gate.subscription.exam'));
       setLoading(false);
@@ -750,7 +752,6 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   loadingAnimation: {
     width: 190,

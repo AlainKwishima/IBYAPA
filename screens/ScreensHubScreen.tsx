@@ -1,15 +1,16 @@
 import { AppText } from '../components/AppText';
 import React from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { REFERENCE_SCREENS, type ReferenceScreenKey } from '../assets/referenceScreens';
 import { RootStackParamList } from '../navigation/types';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { ScreenColumn } from '../components/ScreenColumn';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
 import { useI18n } from '../i18n/useI18n';
-import { hasLanguageAccess } from '../utils/subscriptionAccess';
+import { hasExamAccess, hasReadingAccess, hasVideoAccess } from '../utils/subscriptionAccess';
 import { colors, radii, shadows, spacing, typography } from '../constants/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ScreensHub'>;
@@ -22,20 +23,36 @@ export function ScreensHubScreen({ navigation }: Props) {
   const { t } = useI18n();
   const {
     hasSubscription,
+    canTakeExams,
+    hasReadingAccess: readingEntitlement,
+    hasVideoAccess: videoEntitlement,
     subscriptionLanguage,
     contentLanguage,
     isSigningOut,
   } = useAppFlow();
   const { openGateModal } = useGateModal();
-  const languageAccessGranted = hasLanguageAccess({
+  const examAccessGranted = hasExamAccess({
     hasSubscription,
+    canTakeExams,
+    subscriptionLanguage,
+    contentLanguage,
+  });
+  const readingAccessGranted = hasReadingAccess({
+    hasSubscription,
+    hasReadingAccess: readingEntitlement,
+    subscriptionLanguage,
+    contentLanguage,
+  });
+  const videoAccessGranted = hasVideoAccess({
+    hasSubscription,
+    hasVideoAccess: videoEntitlement,
     subscriptionLanguage,
     contentLanguage,
   });
 
   const gateIfNeeded = (kind: 'exam' | 'read' | 'watch', next: () => void) => {
     if (kind === 'exam') {
-      if (!isSigningOut && (!hasSubscription || !languageAccessGranted)) {
+      if (!isSigningOut && !examAccessGranted) {
         openGateModal('subscription_exam', () => navigation.navigate('SubscriptionNative'));
         return;
       }
@@ -43,7 +60,8 @@ export function ScreensHubScreen({ navigation }: Props) {
       return;
     }
 
-    if (!languageAccessGranted && !isSigningOut) {
+    const accessGranted = kind === 'read' ? readingAccessGranted : videoAccessGranted;
+    if (!accessGranted && !isSigningOut) {
       openGateModal(kind === 'read' ? 'subscription_read' : 'subscription_watch', () => navigation.navigate('SubscriptionNative'));
       return;
     }
@@ -51,7 +69,7 @@ export function ScreensHubScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.root}>
+    <ScreenColumn>
       <ScreenHeader title={t('hub.title')} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {REFERENCE_SCREENS.map((screen) => (
@@ -154,15 +172,11 @@ export function ScreensHubScreen({ navigation }: Props) {
           </Pressable>
         ))}
       </ScrollView>
-    </View>
+    </ScreenColumn>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.canvas,
-  },
   content: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,

@@ -1,5 +1,6 @@
 import { apiRequest, unwrapApiPayload } from './api/client';
 import type { ContentLanguageCode } from '../context/AppFlowContext';
+import { SUBSCRIPTION_ENTITLEMENTS, type SubscriptionEntitlements, type SubscriptionType } from './api/subscriptionTypes';
 
 export type UserAndPayment = {
   user: {
@@ -19,6 +20,14 @@ export type UserAndPayment = {
     subscriptionStatus?: string;
     subscriptionActive?: boolean;
     hasActiveSubscription?: boolean;
+    subscriptionType?: string;
+    subscription_type?: string;
+    subscription?: unknown;
+    entitlements?: unknown;
+    features?: unknown;
+    canReadDocuments?: boolean;
+    canWatchVideos?: boolean;
+    canTakeExams?: boolean;
     /** Plan object or plan name stored on the user. */
     plan?: unknown;
     planName?: string;
@@ -33,8 +42,10 @@ export type UserAndPayment = {
 export type SubscriptionSummary = {
   active: boolean;
   planName: string | null;
+  planCode: SubscriptionType | null;
   expiresAt: string | number | null;
   language: ContentLanguageCode | null;
+  entitlements: SubscriptionEntitlements;
   source: 'role' | 'user' | 'payment' | 'none';
 };
 
@@ -105,6 +116,112 @@ function firstNonEmptyString(...values: unknown[]): string | null {
     if (typeof value === 'string' && value.trim()) return value.trim();
   }
   return null;
+}
+
+function normalizeSubscriptionType(raw: unknown): SubscriptionType | null {
+  const value = String(raw ?? '').toLowerCase().trim().replace(/\s+/g, '-');
+  if (!value) return null;
+  if (value === 'one-time' || value === 'one_time' || value.includes('five-exam')) return 'five-exams';
+  if (value.includes('two-exam')) return 'two-exams';
+  if (value === 'daily' || value.includes('one-day') || value.includes('day')) return 'daily';
+  if (value === 'weekly' || value.includes('one-week') || value === 'week') return 'weekly';
+  if (value === 'two-weekly' || value.includes('two-week') || value.includes('14-day')) return 'two-weekly';
+  if (value === 'monthly' || value.includes('one-month') || value.includes('month')) return 'monthly';
+  return null;
+}
+
+function rawPlanValues(raw: unknown): unknown[] {
+  if (raw == null || raw === false) return [];
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    const o = raw as Record<string, unknown>;
+    return [o.code, o.slug, o.id, o.name, o.title, o.label, o.planName, o.subscription_type, o.subscriptionType, o.planType, o.type];
+  }
+  return [raw];
+}
+
+function accessFlagFromSources(
+  sources: Array<Record<string, unknown>>,
+  keys: string[],
+): boolean | undefined {
+  for (const source of sources) {
+    for (const key of keys) {
+      if (typeof source[key] === 'boolean') return source[key] as boolean;
+    }
+    for (const containerKey of ['entitlements', 'features', 'subscription']) {
+      const container = source[containerKey];
+      if (!container || typeof container !== 'object' || Array.isArray(container)) continue;
+      const nested = container as Record<string, unknown>;
+      for (const key of keys) {
+        if (typeof nested[key] === 'boolean') return nested[key] as boolean;
+      }
+    }
+  }
+  return undefined;
+}
+
+function subscriptionPlanFromProfile(profile: UserAndPayment): SubscriptionType | null {
+  const user = profile.user as unknown as Record<string, unknown>;
+  const sources: Record<string, unknown>[] = [user];
+  const userPlan = user.subscription ?? user.plan;
+  for (const value of rawPlanValues(userPlan)) {
+    const normalized = normalizeSubscriptionType(value);
+    if (normalized) return normalized;
+  }
+  sources.push(...rawPlanValues(userPlan).filter((value): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value))));
+
+  if (Array.isArray(profile.payment)) {
+    const activePayments = profile.payment
+      .filter((payment) => payment && typeof payment === 'object' && paymentsIndicateActiveSubscription([payment]))
+      .sort((a, b) => paymentSortKey(b) - paymentSortKey(a));
+    for (const payment of activePayments) {
+      const record = payment as Record<string, unknown>;
+      sources.push(record);
+      for (const value of rawPlanValues(record.plan)) {
+        const normalized = normalizeSubscriptionType(value);
+        if (normalized) return normalized;
+      }
+      sources.push(...rawPlanValues(record.plan).filter((value): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value))));
+    }
+  }
+
+  for (const source of sources) {
+    for (const value of rawPlanValues(source)) {
+      const normalized = normalizeSubscriptionType(value);
+      if (normalized) return normalized;
+    }
+  }
+  return null;
+}
+
+export function profileSubscriptionEntitlements(profile: UserAndPayment): SubscriptionEntitlements & { planCode: SubscriptionType | null; privileged: boolean } {
+  const privileged = profileHasPrivilegedAccess(profile);
+  const planCode = subscriptionPlanFromProfile(profile);
+  const planDefaults = planCode ? SUBSCRIPTION_ENTITLEMENTS[planCode] : {
+    canTakeExams: true,
+    canReadDocuments: false,
+    canWatchVideos: false,
+    examAttemptLimit: null,
+  };
+  const sources: Record<string, unknown>[] = [profile.user as unknown as Record<string, unknown>];
+  if (Array.isArray(profile.payment)) {
+    const activePayments = profile.payment
+      .filter((payment) => payment && typeof payment === 'object' && paymentsIndicateActiveSubscription([payment]))
+      .sort((a, b) => paymentSortKey(b) - paymentSortKey(a));
+    sources.push(...activePayments.slice(0, 1).map((payment) => payment as Record<string, unknown>));
+  }
+
+  const canTakeExams = accessFlagFromSources(sources, ['canTakeExams', 'can_take_exams', 'examAccess', 'exam_access']) ?? planDefaults.canTakeExams;
+  const canReadDocuments = accessFlagFromSources(sources, ['canReadDocuments', 'can_read_documents', 'readingAccess', 'reading_access', 'documentAccess', 'document_access']) ?? planDefaults.canReadDocuments;
+  const canWatchVideos = accessFlagFromSources(sources, ['canWatchVideos', 'can_watch_videos', 'videoAccess', 'video_access']) ?? planDefaults.canWatchVideos;
+
+  return {
+    planCode,
+    privileged,
+    canTakeExams: privileged || canTakeExams,
+    canReadDocuments: privileged || canReadDocuments,
+    canWatchVideos: privileged || canWatchVideos,
+    examAttemptLimit: privileged ? null : planDefaults.examAttemptLimit,
+  };
 }
 
 function planNameFromRaw(raw: unknown): string | null {
@@ -359,13 +476,16 @@ export function profileSubscriptionSummary(
   fallbackSubscriptionLanguage: ContentLanguageCode | null = null,
 ): SubscriptionSummary {
   const resolvedSubscriptionLanguage = latestActiveSubscriptionLanguage(profile, fallbackSubscriptionLanguage);
+  const entitlements = profileSubscriptionEntitlements(profile);
 
   if (profileHasPrivilegedAccess(profile)) {
     return {
       active: true,
       planName: profile.user.planName ?? planNameFromRaw(profile.user.plan) ?? 'Full access',
+      planCode: entitlements.planCode,
       expiresAt: profile.user.subscriptionExpiry ?? profile.user.subscriptionExpiresAt ?? profile.user.expiresAt ?? null,
       language: resolvedSubscriptionLanguage,
+      entitlements,
       source: 'role',
     };
   }
@@ -377,8 +497,10 @@ export function profileSubscriptionSummary(
     return {
       active: userActive,
       planName: userPlan,
+      planCode: entitlements.planCode,
       expiresAt: userExpiry,
       language: resolvedSubscriptionLanguage,
+      entitlements,
       source: 'user',
     };
   }
@@ -393,8 +515,10 @@ export function profileSubscriptionSummary(
       return {
         active: paymentsIndicateActiveSubscription([o]),
         planName: firstNonEmptyString(o.planName, o.plan, o.subscription_type, o.subscriptionType, o.planType, o.type),
+        planCode: entitlements.planCode,
         expiresAt: paymentExpiry(o),
         language: paymentLanguage(o) ?? resolvedSubscriptionLanguage,
+        entitlements,
         source: 'payment',
       };
     }
@@ -403,8 +527,10 @@ export function profileSubscriptionSummary(
   return {
     active: false,
     planName: null,
+    planCode: entitlements.planCode,
     expiresAt: null,
     language: resolvedSubscriptionLanguage,
+    entitlements,
     source: 'none',
   };
 }

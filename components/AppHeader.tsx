@@ -32,9 +32,11 @@ export function AppHeader({
   titleOffsetX = 0,
   truncateTitle = true,
 }: AppHeaderProps) {
-  const { insets, scale, verticalScale, radius, touch, font, lineHeight } = useResponsiveLayout();
+  const { insets, width, contentMaxWidth, scale, verticalScale, radius, touch, font, lineHeight } = useResponsiveLayout();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = React.useState(false);
+  const viewportWidth = Math.max(0, width - insets.left - insets.right);
+  const sideOffset = Math.max(0, (viewportWidth - contentMaxWidth) / 2);
 
   const refreshContent = async () => {
     if (refreshing) return;
@@ -47,8 +49,8 @@ export function AppHeader({
   };
 
   return (
-    <View style={[styles.root, { paddingHorizontal: scale(spacing.lg) }]}>
-      <View style={[styles.row, { minHeight: verticalScale(54), paddingBottom: verticalScale(spacing.xs) }]}>
+    <View style={[styles.root, { width: viewportWidth, marginLeft: -sideOffset }]}>
+      <View style={[styles.row, { width: contentMaxWidth, alignSelf: 'center', minHeight: verticalScale(54), paddingBottom: verticalScale(spacing.xs), paddingHorizontal: scale(spacing.lg) }]}>
         <View style={[styles.side, { width: touch(44) }]}>
           {left ?? (onBack ? (
             <TouchableOpacity
@@ -88,7 +90,7 @@ export function AppHeader({
                   <Ionicons name="refresh-outline" size={scale(21)} color={colors.white} />
                 )}
               </TouchableOpacity>
-              <HeaderMenu navigation={navigation} iconColor={colors.white} topOffset={verticalScale(52)} rightOffset={scale(18)} />
+              <HeaderMenu navigation={navigation} iconColor={colors.white} topOffset={verticalScale(52)} rightOffset={sideOffset + scale(18)} />
             </View>
           ) : null)}
         </View>
@@ -98,7 +100,6 @@ export function AppHeader({
           styles.curveOverlay,
           {
             height: verticalScale(18),
-            marginHorizontal: -scale(spacing.lg),
             borderTopLeftRadius: radius(24),
             borderTopRightRadius: radius(24),
             backgroundColor: curveColor,
@@ -116,6 +117,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: spacing.lg,
   },
   curveOverlay: {
     marginTop: 0,

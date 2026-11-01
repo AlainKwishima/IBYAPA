@@ -1,37 +1,34 @@
 import React from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Image, ImageResolvedAssetSource, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ImageResolvedAssetSource, ScrollView, StyleSheet } from 'react-native';
 
 import { REFERENCE_BY_KEY } from '../assets/referenceScreens';
 import { RootStackParamList } from '../navigation/types';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { colors, spacing } from '../constants/theme';
-import { useResponsiveMetrics } from '../utils/responsive';
+import { spacing } from '../constants/theme';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { ScreenColumn } from '../components/ScreenColumn';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ReferenceImage'>;
 
 export function ReferenceImageScreen({ route, navigation }: Props) {
-  const r = useResponsiveMetrics();
+  const r = useResponsiveLayout();
   const screen = REFERENCE_BY_KEY[route.params.key];
-  const phoneWidth = Math.min(r.width - r.scale(spacing.xxl), r.scale(420));
+  const imageWidth = Math.min(r.contentMaxWidth - r.scale(spacing.xl), r.scale(420));
   const resolved = Image.resolveAssetSource(screen.source) as ImageResolvedAssetSource | undefined;
   const aspectRatio = resolved?.width && resolved?.height ? resolved.width / resolved.height : 1125 / 2433;
 
   return (
-    <View style={styles.root}>
+    <ScreenColumn>
       <ScreenHeader title={screen.title} onBack={() => navigation.goBack()} />
       <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingHorizontal: r.scale(spacing.md), paddingBottom: r.verticalScale(spacing.xxl) }]}>
-        <Image source={screen.source} style={{ width: phoneWidth, aspectRatio }} resizeMode="contain" />
+        <Image source={screen.source} style={{ width: imageWidth, maxWidth: '100%', aspectRatio }} resizeMode="contain" />
       </ScrollView>
-    </View>
+    </ScreenColumn>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.canvas,
-  },
   scroll: {
     flex: 1,
   },

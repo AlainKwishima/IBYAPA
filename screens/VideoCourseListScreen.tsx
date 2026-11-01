@@ -18,7 +18,7 @@ import { useGateModal } from '../context/GateModalContext';
 import { getVideos, type VideoItem } from '../services/contentApi';
 import { getMessageFromUnknownError } from '../services/api/client';
 import { useI18n } from '../i18n/useI18n';
-import { hasLanguageAccess, resolvePaidContentLanguage } from '../utils/subscriptionAccess';
+import { hasVideoAccess, resolvePaidContentLanguage } from '../utils/subscriptionAccess';
 import { normalizeHttpUrl, youtubeThumbnailUrl } from '../utils/videoLinks';
 import { colors, radii, shadows, spacing, typography } from '../constants/theme';
 
@@ -92,14 +92,16 @@ export function VideoCourseListScreen({ navigation }: Props) {
   const { accessToken } = useAuth();
   const {
     hasSubscription,
+    hasVideoAccess: videoEntitlement,
     canChangeLanguage,
     subscriptionLanguage,
     contentLanguage,
     isSigningOut,
   } = useAppFlow();
   const { openGateModal } = useGateModal();
-  const languageAccessGranted = hasLanguageAccess({
+  const videoAccessGranted = hasVideoAccess({
     hasSubscription,
+    hasVideoAccess: videoEntitlement,
     canChangeLanguage,
     subscriptionLanguage,
     contentLanguage,
@@ -112,23 +114,23 @@ export function VideoCourseListScreen({ navigation }: Props) {
   });
 
   useEffect(() => {
-    if (!languageAccessGranted && !isSigningOut) {
+    if (!videoAccessGranted && !isSigningOut) {
       openGateModal('subscription_watch', () => navigation.navigate('SubscriptionNative'));
     }
-  }, [isSigningOut, languageAccessGranted, navigation, openGateModal]);
+  }, [isSigningOut, navigation, openGateModal, videoAccessGranted]);
 
   const { data: items = [], isPending, error: queryError, refetch } = useQuery({
     queryKey: ['videos', accessToken, paidContentLanguage],
     queryFn: async () => {
-      if (!accessToken || !languageAccessGranted || !paidContentLanguage || isSigningOut) {
+      if (!accessToken || !videoAccessGranted || !paidContentLanguage || isSigningOut) {
         return [];
       }
       return await getVideos(accessToken, paidContentLanguage);
     },
-    enabled: !!accessToken && languageAccessGranted && !!paidContentLanguage && !isSigningOut,
+    enabled: !!accessToken && videoAccessGranted && !!paidContentLanguage && !isSigningOut,
   });
 
-  const loading = isPending && !!accessToken && languageAccessGranted && !!paidContentLanguage && !isSigningOut;
+  const loading = isPending && !!accessToken && videoAccessGranted && !!paidContentLanguage && !isSigningOut;
   const error = !accessToken ? t('video.needSignIn') : queryError ? getMessageFromUnknownError(queryError) : null;
   const loadVideos = () => { void refetch(); };
 
@@ -150,7 +152,7 @@ export function VideoCourseListScreen({ navigation }: Props) {
     });
   };
 
-  if (!languageAccessGranted) {
+  if (!videoAccessGranted) {
     return (
       <ScreenColumn>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: tabScrollBottomPad + spacing.xl }]}>

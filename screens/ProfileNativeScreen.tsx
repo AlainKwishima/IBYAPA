@@ -1,20 +1,22 @@
 import { AppText } from '../components/AppText';
 import React from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Alert, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 
 import { RootStackParamList } from '../navigation/types';
 import { BottomNavBar } from '../components/BottomNavBar';
 import { ScreenColumn } from '../components/ScreenColumn';
 import { AppHeader } from '../components/AppHeader';
-import { SectionHeading } from '../components/SectionHeading';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n/useI18n';
 import { SignOutConfirmationModal } from '../components/SignOutConfirmationModal';
 import { colors, radii, spacing, typography } from '../constants/theme';
+import { getMyCertificateStatus, hasConfirmedCertificatePayment } from '../services/certificatesApi';
+import { toIntlRwandaPhone } from '../utils/phone';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProfileNative'>;
 
@@ -58,11 +60,30 @@ function AccountRow({
 
 export function ProfileNativeScreen({ navigation }: Props) {
   const { hasSubscription, contentLanguage } = useAppFlow();
-  const { tabScrollBottomPad } = useResponsiveLayout();
+  const { tabScrollBottomPad, scale, verticalScale, radius } = useResponsiveLayout();
   const { t } = useI18n();
-  const { name, phone, logout, deleteAccount, subscriptionSummary } = useAuth();
+  const { name, phone, logout, updateProfile, accessToken, subscriptionSummary } = useAuth();
   const [showSignOutConfirm, setShowSignOutConfirm] = React.useState(false);
-  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [showEditProfile, setShowEditProfile] = React.useState(false);
+  const [editName, setEditName] = React.useState(name ?? '');
+  const [editPhone, setEditPhone] = React.useState(phone ?? '');
+  const [editError, setEditError] = React.useState<string | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = React.useState(false);
+  const certificateQuery = useQuery({
+    queryKey: ['certificateStatus', accessToken],
+    enabled: Boolean(accessToken),
+    retry: false,
+    staleTime: 0,
+    queryFn: () => getMyCertificateStatus(accessToken as string),
+  });
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (accessToken) void certificateQuery.refetch();
+    });
+    return unsubscribe;
+  }, [navigation, accessToken, certificateQuery.refetch]);
+
+  const certificatePaid = hasConfirmedCertificatePayment(certificateQuery.data);
   const langLabel = t(`profile.lang.${contentLanguage}`);
   const subscriptionActive = hasSubscription || subscriptionSummary?.active === true;
   const subscriptionLanguageLabel = subscriptionSummary?.language ? t(`profile.lang.${subscriptionSummary.language}`) : t('common.na');
@@ -70,7 +91,7 @@ export function ProfileNativeScreen({ navigation }: Props) {
     subscriptionSummary?.planName ??
     (subscriptionActive ? t('profile.planActiveFallback') : t('profile.noPlan'));
   const expiryLabel = subscriptionActive
-    ? formatSubscriptionDate(subscriptionSummary?.expiresAt, t('profile.expiryUnavailable'))
+    ? formatSubscriptionDate(subscriptionSummary?.expiresAt, t('common.na'))
     : t('profile.noPlan');
   const initials = (name ?? 'N')
     .split(/\s+/)
@@ -79,28 +100,34 @@ export function ProfileNativeScreen({ navigation }: Props) {
     .map((part) => part[0]?.toUpperCase())
     .join('');
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      t('profile.deleteAccountTitle'),
-      t('profile.deleteAccountConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('profile.deleteAccountTitle'),
-          style: 'destructive',
-          onPress: async () => {
-            if (isDeleting) return;
-            setIsDeleting(true);
-            try {
-              await deleteAccount();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete account. Please try again later.');
-              setIsDeleting(false);
-            }
-          },
-        },
-      ]
-    );
+  const openEditProfile = () => {
+    setEditName(name ?? '');
+    setEditPhone(phone ?? '');
+    setEditError(null);
+    setShowEditProfile(true);
+  };
+
+  const saveProfile = async () => {
+    const cleanName = editName.trim();
+    const phoneIntl = toIntlRwandaPhone(editPhone);
+    if (cleanName.length < 2) {
+      setEditError(t('profile.nameRequired'));
+      return;
+    }
+    if (!phoneIntl) {
+      setEditError(t('profile.phoneInvalid'));
+      return;
+    }
+    setIsSavingProfile(true);
+    setEditError(null);
+    try {
+      await updateProfile(cleanName, phoneIntl);
+      setShowEditProfile(false);
+    } catch {
+      setEditError(t('profile.profileUpdateFailed'));
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   return (
@@ -120,15 +147,22 @@ export function ProfileNativeScreen({ navigation }: Props) {
               <AppText style={styles.identityName}>{name ?? t('profile.myAccount')}</AppText>
               <AppText style={styles.identityPhone}>{phone ?? t('common.na')}</AppText>
             </View>
-            <View style={[styles.planPill, subscriptionActive ? styles.planPillActive : styles.planPillInactive]}>
-              <View style={[styles.planDot, subscriptionActive ? styles.planDotActive : styles.planDotInactive]} />
-              <AppText style={[styles.planPillText, subscriptionActive ? styles.planPillTextActive : styles.planPillTextInactive]}>
-                {subscriptionActive ? t('profile.planActive') : t('profile.noPlan')}
-              </AppText>
-            </View>
           </View>
 
-          <SectionHeading title={t('profile.myAccount')} />
+          <View style={styles.profileSectionHeading}>
+            <AppText style={[styles.profileSectionTitle, { fontSize: scale(17), lineHeight: verticalScale(23) }]}>
+              {t('profile.myAccount')}
+            </AppText>
+            <TouchableOpacity
+              style={styles.editProfileIconButton}
+              onPress={openEditProfile}
+              activeOpacity={0.78}
+              accessibilityRole="button"
+              accessibilityLabel={t('profile.edit')}
+            >
+              <Ionicons name="create-outline" size={20} color={colors.brand} />
+            </TouchableOpacity>
+          </View>
           <View style={styles.accountCard}>
             <AccountRow icon="person-outline" label={t('profile.fullName')} value={name ?? t('common.na')} />
             <View style={styles.divider} />
@@ -142,11 +176,46 @@ export function ProfileNativeScreen({ navigation }: Props) {
             <AccountRow icon="call-outline" label={t('profile.phone')} value={phone ?? t('common.na')} />
           </View>
 
-          <SectionHeading
-            title={t('profile.paymentInfo')}
-            action={t('profile.update')}
-            onAction={() => navigation.navigate('SubscriptionNative')}
-          />
+          {certificatePaid ? (
+            <TouchableOpacity
+              style={styles.certificateButton}
+              onPress={() => navigation.navigate('CertificateNative')}
+              activeOpacity={0.84}
+              accessibilityRole="button"
+            >
+              <View style={styles.certificateButtonIcon}>
+                <Ionicons name="ribbon-outline" size={21} color={colors.brandStrong} />
+              </View>
+              <AppText style={styles.certificateButtonText}>{t('profile.viewCertificate')}</AppText>
+              <Ionicons name="chevron-forward" size={20} color={colors.inkSoft} />
+            </TouchableOpacity>
+          ) : null}
+          {certificateQuery.isError ? (
+            <TouchableOpacity
+              style={styles.certificateUnavailable}
+              onPress={() => void certificateQuery.refetch()}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
+              <AppText style={styles.certificateUnavailableText}>{t('profile.certificateStatusUnavailable')}</AppText>
+              <Ionicons name="refresh" size={18} color={colors.brand} />
+            </TouchableOpacity>
+          ) : null}
+
+          <View style={styles.profileSectionHeading}>
+            <AppText style={[styles.profileSectionTitle, { fontSize: scale(17), lineHeight: verticalScale(23) }]}>
+              {t('profile.paymentInfo')}
+            </AppText>
+            <TouchableOpacity
+              style={styles.editProfileIconButton}
+              onPress={() => navigation.navigate('SubscriptionNative')}
+              activeOpacity={0.78}
+              accessibilityRole="button"
+              accessibilityLabel={t('profile.edit')}
+            >
+              <Ionicons name="create-outline" size={20} color={colors.brand} />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity
             style={styles.subscriptionCard}
             activeOpacity={0.86}
@@ -200,10 +269,6 @@ export function ProfileNativeScreen({ navigation }: Props) {
             <AppText style={styles.signOutText}>{t('profile.signOut')}</AppText>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.deleteAccountBtn, isDeleting && { opacity: 0.5 }]} onPress={handleDeleteAccount} activeOpacity={0.82} disabled={isDeleting}>
-            <MaterialCommunityIcons name="delete-outline" size={19} color={colors.danger} />
-            <AppText style={styles.deleteAccountText}>{isDeleting ? t('common.loading') : t('profile.deleteAccountTitle')}</AppText>
-          </TouchableOpacity>
         </ScrollView>
       </View>
 
@@ -216,6 +281,64 @@ export function ProfileNativeScreen({ navigation }: Props) {
           await logout();
         }}
       />
+      <Modal
+        visible={showEditProfile}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !isSavingProfile && setShowEditProfile(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalBackdrop}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={[styles.editModal, { borderRadius: radius(radii.xl), padding: scale(spacing.xl) }]}>
+            <View style={styles.editModalHeader}>
+              <AppText style={[styles.editModalTitle, { fontSize: scale(20) }]}>{t('profile.edit')}</AppText>
+              <TouchableOpacity
+                onPress={() => setShowEditProfile(false)}
+                disabled={isSavingProfile}
+                style={styles.modalClose}
+                accessibilityLabel={t('common.cancel')}
+              >
+                <Ionicons name="close" size={22} color={colors.inkSoft} />
+              </TouchableOpacity>
+            </View>
+            <AppText style={styles.inputLabel}>{t('profile.fullName')}</AppText>
+            <TextInput
+              value={editName}
+              onChangeText={setEditName}
+              autoCapitalize="words"
+              returnKeyType="next"
+              style={[styles.editInput, { minHeight: Math.max(48, verticalScale(48)), borderRadius: radius(radii.md) }]}
+            />
+            <AppText style={styles.inputLabel}>{t('profile.phone')}</AppText>
+            <TextInput
+              value={editPhone}
+              onChangeText={setEditPhone}
+              keyboardType="phone-pad"
+              returnKeyType="done"
+              style={[styles.editInput, { minHeight: Math.max(48, verticalScale(48)), borderRadius: radius(radii.md) }]}
+            />
+            {editError ? <AppText style={styles.editError}>{editError}</AppText> : null}
+            <View style={styles.editActions}>
+              <TouchableOpacity
+                style={styles.cancelEditButton}
+                onPress={() => setShowEditProfile(false)}
+                disabled={isSavingProfile}
+              >
+                <AppText style={styles.cancelEditText}>{t('common.cancel')}</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveEditButton, isSavingProfile && styles.disabledButton]}
+                onPress={() => void saveProfile()}
+                disabled={isSavingProfile}
+              >
+                <AppText style={styles.saveEditText}>{isSavingProfile ? t('common.loading') : t('profile.save')}</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </ScreenColumn>
   );
 }
@@ -264,47 +387,34 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     color: colors.inkMuted,
   },
-  planPill: {
-    minHeight: 30,
-    paddingHorizontal: 10,
-    borderRadius: radii.pill,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  planPillActive: {
-    backgroundColor: colors.successSoft,
-  },
-  planPillInactive: {
-    backgroundColor: colors.brandSoft,
-  },
-  planDot: {
-    width: 6,
-    height: 6,
-    marginRight: 6,
-    borderRadius: 3,
-  },
-  planDotActive: {
-    backgroundColor: colors.success,
-  },
-  planDotInactive: {
-    backgroundColor: colors.brand,
-  },
-  planPillText: {
-    ...typography.caption,
-    fontFamily: 'Poppins-Bold',
-  },
-  planPillTextActive: {
-    color: colors.success,
-  },
-  planPillTextInactive: {
-    color: colors.brandStrong,
-  },
   accountCard: {
     paddingHorizontal: spacing.lg,
     borderRadius: radii.xl,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
+  },
+  profileSectionHeading: {
+    minHeight: 48,
+    marginTop: spacing.xxl,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  profileSectionTitle: {
+    ...typography.sectionTitle,
+    flex: 1,
+    color: colors.ink,
+  },
+  editProfileIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandSoft,
   },
   accountRow: {
     minHeight: 76,
@@ -410,6 +520,45 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
     color: colors.ink,
   },
+  certificateButton: {
+    minHeight: 60,
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  certificateButtonIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandSoft,
+  },
+  certificateButtonText: {
+    ...typography.bodyStrong,
+    flex: 1,
+    marginLeft: spacing.md,
+    color: colors.ink,
+  },
+  certificateUnavailable: {
+    minHeight: 44,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  certificateUnavailableText: {
+    ...typography.caption,
+    flex: 1,
+    marginRight: spacing.sm,
+    color: colors.inkMuted,
+  },
   signOutBtn: {
     height: 54,
     marginTop: spacing.xxl,
@@ -426,20 +575,90 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
     color: colors.ink,
   },
-  deleteAccountBtn: {
-    height: 54,
-    marginTop: spacing.md,
-    borderRadius: radii.pill,
+  modalBackdrop: {
+    flex: 1,
+    padding: spacing.xl,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.48)',
+  },
+  editModal: {
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  editModalHeader: {
+    minHeight: 40,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  editModalTitle: {
+    ...typography.sectionTitle,
+    flex: 1,
+    color: colors.ink,
+  },
+  modalClose: {
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    backgroundColor: colors.dangerSoft,
-    borderWidth: 1,
-    borderColor: colors.dangerSoft,
   },
-  deleteAccountText: {
-    ...typography.bodyStrong,
-    marginLeft: spacing.sm,
+  inputLabel: {
+    ...typography.caption,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+    color: colors.inkSoft,
+  },
+  editInput: {
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.canvas,
+    color: colors.ink,
+    ...typography.body,
+  },
+  editError: {
+    ...typography.caption,
+    marginTop: spacing.sm,
     color: colors.danger,
+  },
+  editActions: {
+    marginTop: spacing.xl,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+  },
+  cancelEditButton: {
+    minWidth: 92,
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceAlt,
+  },
+  cancelEditText: {
+    ...typography.bodyStrong,
+    color: colors.ink,
+  },
+  saveEditButton: {
+    minWidth: 112,
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brand,
+  },
+  saveEditText: {
+    ...typography.bodyStrong,
+    color: colors.white,
+  },
+  disabledButton: {
+    opacity: 0.65,
   },
 });

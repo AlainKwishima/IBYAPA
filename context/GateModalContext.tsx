@@ -125,7 +125,10 @@ export function GateModalProvider({ children }: { children: React.ReactNode }) {
                     <View style={styles.warningIcon}>
                       <Ionicons name="warning-outline" size={18} color={colors.warning} />
                     </View>
-                    <AppText style={styles.subscriptionMessage}>{config.message}</AppText>
+                    <View style={styles.subscriptionCopy}>
+                      <AppText lines={null} style={styles.subscriptionTitle}>{config.title}</AppText>
+                      <AppText lines={null} style={styles.subscriptionMessage}>{config.message}</AppText>
+                    </View>
                   </View>
                   <View style={styles.subscriptionActionWrap}>
                     <TouchableOpacity style={styles.subscriptionButton} onPress={onConfirm} activeOpacity={0.88}>
@@ -178,7 +181,7 @@ const styles = StyleSheet.create({
   },
   subscriptionCard: {
     width: '100%',
-    maxWidth: 336,
+    maxWidth: 380,
     overflow: 'hidden',
     borderRadius: 10,
     backgroundColor: colors.surface,
@@ -187,11 +190,11 @@ const styles = StyleSheet.create({
     ...shadows.floating,
   },
   subscriptionNotice: {
-    minHeight: 68,
+    minHeight: 104,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: colors.warningSoft,
   },
   warningIcon: {
@@ -204,13 +207,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.warning,
   },
-  subscriptionMessage: {
+  subscriptionCopy: {
     flex: 1,
     marginLeft: spacing.md,
+    minWidth: 0,
+  },
+  subscriptionTitle: {
+    fontFamily: 'Poppins-ExtraBold',
+    fontSize: 15,
+    lineHeight: 21,
+    color: colors.textPrimary,
+  },
+  subscriptionMessage: {
+    marginTop: spacing.xs,
     fontFamily: 'Poppins-ExtraBold',
     fontSize: 14,
     lineHeight: 20,
-    color: colors.textPrimary,
+    color: colors.textSecondary,
   },
   subscriptionActionWrap: {
     paddingHorizontal: spacing.lg,

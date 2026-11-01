@@ -17,7 +17,7 @@ import { LoadingState } from '../components/RequestStates';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
-import { hasLanguageAccess } from '../utils/subscriptionAccess';
+import { hasVideoAccess } from '../utils/subscriptionAccess';
 import { extractYouTubeId } from '../utils/videoLinks';
 import { colors, radii, shadows, spacing, typography } from '../constants/theme';
 
@@ -167,13 +167,15 @@ export function VideoCoursePlayerScreen({ navigation, route }: Props) {
   const isFocused = useIsFocused();
   const {
     hasSubscription,
+    hasVideoAccess: videoEntitlement,
     subscriptionLanguage,
     contentLanguage,
     isSigningOut,
   } = useAppFlow();
   const { openGateModal } = useGateModal();
-  const languageAccessGranted = hasLanguageAccess({
+  const videoAccessGranted = hasVideoAccess({
     hasSubscription,
+    hasVideoAccess: videoEntitlement,
     subscriptionLanguage,
     contentLanguage,
   });
@@ -199,12 +201,12 @@ export function VideoCoursePlayerScreen({ navigation, route }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!languageAccessGranted && !isSigningOut) {
+    if (!videoAccessGranted && !isSigningOut) {
       openGateModal('subscription_watch', () => navigation.navigate('SubscriptionNative'));
     }
-  }, [isSigningOut, languageAccessGranted, navigation, openGateModal]);
+  }, [isSigningOut, navigation, openGateModal, videoAccessGranted]);
 
-  if (!languageAccessGranted) {
+  if (!videoAccessGranted) {
     return (
       <ScreenColumn>
         <AppHeader title={t('video.playerTitle')} navigation={navigation} onBack={() => navigation.goBack()} />

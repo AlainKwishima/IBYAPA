@@ -34,6 +34,19 @@ export type CertificateStatus = {
   } | null;
 };
 
+const CONFIRMED_CERTIFICATE_PAYMENT_STATES = new Set(['paid', 'success', 'successful', 'completed', 'confirmed']);
+
+/** Only backend states that represent a completed certificate payment grant certificate access. */
+export function hasConfirmedCertificatePayment(status: CertificateStatus | undefined): boolean {
+  if (!status) return false;
+  const requestStatus = status.request?.status?.toLowerCase().trim();
+  const paymentStatus = status.request?.paymentStatus?.toLowerCase().trim();
+  const certificateStatus = status.certificate?.status?.toLowerCase().trim();
+  return requestStatus === 'paid' || requestStatus === 'under_review' ||
+    (paymentStatus != null && CONFIRMED_CERTIFICATE_PAYMENT_STATES.has(paymentStatus)) ||
+    status.certificate?.hasDocument === true || certificateStatus === 'issued';
+}
+
 export type CertificateRequestInput = {
   legalName: string;
   nationalId: string;

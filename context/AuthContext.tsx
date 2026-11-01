@@ -10,10 +10,12 @@ import { ApiError } from '../services/api/types';
 import {
   getUserAndPayment,
   deleteAccountProfile,
+  updateUserProfile,
   latestActiveSubscriptionLanguage,
   profileHasHighestSubscription,
   profileHasTimeBasedSubscription,
   profileIndicatesActiveSubscription,
+  profileSubscriptionEntitlements,
   profileSubscriptionSummary,
   type SubscriptionSummary,
 } from '../services/userApi';
@@ -43,6 +45,7 @@ type AuthContextValue = AuthState & {
   signup: (name: string, phone: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
+  updateProfile: (name: string, phone: string) => Promise<void>;
   /** Refreshes profile from the server without downgrading entitlements on transient failures. */
   refreshProfile: () => Promise<ProfileRefreshResult>;
 };
@@ -64,10 +67,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const {
     setSignedIn,
     setHasSubscription,
+    setCanTakeExams,
+    setHasReadingAccess,
+    setHasVideoAccess,
     setHasTimeBasedSubscription,
     setHasUsedFreeTrial,
     setCanChangeLanguage,
     setSubscriptionLanguage,
+    setSubscriptionPlan,
     setSigningOut,
     subscriptionLanguage,
     hydrated,
@@ -108,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const highestSub = profileHasHighestSubscription(profile);
       const paidLanguage = sub ? latestActiveSubscriptionLanguage(profile, subscriptionLanguage) : null;
       const summary = profileSubscriptionSummary(profile, paidLanguage);
+      const entitlements = profileSubscriptionEntitlements(profile);
       if (__DEV__) {
         console.log('[AuthContext] hasSubscription resolved to →', sub);
         console.log('[AuthContext] hasTimeBasedSubscription resolved to →', timeBased);
@@ -115,15 +123,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('[AuthContext] paid language resolved to →', paidLanguage);
       }
       await setHasSubscription(sub);
+      await setCanTakeExams(sub && entitlements.canTakeExams);
+      await setHasReadingAccess(sub && entitlements.canReadDocuments);
+      await setHasVideoAccess(sub && entitlements.canWatchVideos);
       await setHasTimeBasedSubscription(timeBased);
       await setCanChangeLanguage(highestSub);
       await setSubscriptionLanguage(paidLanguage);
+      await setSubscriptionPlan(sub ? entitlements.planCode : null);
       setSubscriptionSummary(summary);
       await persistAuth({ accessToken: token, userId: uid, name: u.name, phone: u.phone, subscriptionSummary: summary });
       logAuthEvent('apply_profile_ok', { userId: uid, hasSubscription: sub, timeBased });
       return sub ? { status: 'active', hasSubscription: true } : { status: 'inactive', hasSubscription: false };
     },
-    [setCanChangeLanguage, setHasSubscription, setHasTimeBasedSubscription, setHasUsedFreeTrial, setSubscriptionLanguage, subscriptionLanguage],
+    [setCanChangeLanguage, setCanTakeExams, setHasReadingAccess, setHasSubscription, setHasTimeBasedSubscription, setHasUsedFreeTrial, setHasVideoAccess, setSubscriptionLanguage, setSubscriptionPlan, subscriptionLanguage],
   );
 
   const clearStoredSession = useCallback(
@@ -144,12 +156,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSubscriptionSummary(null);
       await setSignedIn(false);
       await setHasSubscription(false);
+      await setCanTakeExams(false);
+      await setHasReadingAccess(false);
+      await setHasVideoAccess(false);
       await setHasTimeBasedSubscription(false);
       await setHasUsedFreeTrial(false);
       await setCanChangeLanguage(false);
       await setSubscriptionLanguage(null);
+      await setSubscriptionPlan(null);
     },
-    [setCanChangeLanguage, setHasSubscription, setHasTimeBasedSubscription, setHasUsedFreeTrial, setSignedIn, setSubscriptionLanguage],
+    [setCanChangeLanguage, setCanTakeExams, setHasReadingAccess, setHasSubscription, setHasTimeBasedSubscription, setHasUsedFreeTrial, setHasVideoAccess, setSignedIn, setSubscriptionLanguage, setSubscriptionPlan],
   );
 
   const scheduleTokenExpiryCheck = useCallback(
@@ -246,11 +262,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     hydrated,
     scheduleTokenExpiryCheck,
     setCanChangeLanguage,
+    setCanTakeExams,
+    setHasReadingAccess,
     setHasSubscription,
     setHasTimeBasedSubscription,
+    setHasVideoAccess,
     setSignedIn,
     setSigningOut,
     setSubscriptionLanguage,
+    setSubscriptionPlan,
   ]);
 
   const login = useCallback(
@@ -266,6 +286,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setName(data.name);
       setPhone(data.phone);
       setSubscriptionSummary(null);
+      // Clear the previous account's entitlements, but preserve a same-account
+      // last-known-good state until its profile refresh has completed.
+      if (userId !== uid) {
+        await setHasSubscription(false);
+        await setCanTakeExams(false);
+        await setHasReadingAccess(false);
+        await setHasVideoAccess(false);
+        await setHasTimeBasedSubscription(false);
+        await setCanChangeLanguage(false);
+        await setSubscriptionLanguage(null);
+        await setSubscriptionPlan(null);
+      }
       setSigningOut(false);
       await persistAuth({ accessToken: token, userId: uid, name: data.name, phone: data.phone, subscriptionSummary: null });
       await setSignedIn(true);
@@ -290,8 +322,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       applyProfile,
       clearStoredSession,
       scheduleTokenExpiryCheck,
+      setCanChangeLanguage,
+      setCanTakeExams,
+      setHasReadingAccess,
+      setHasSubscription,
+      setHasTimeBasedSubscription,
+      setHasVideoAccess,
       setSignedIn,
       setSigningOut,
+      setSubscriptionLanguage,
+      setSubscriptionPlan,
+      userId,
     ],
   );
 
@@ -318,10 +359,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await clearRememberedCredentials();
     await setSignedIn(false);
     await setHasSubscription(false);
+    await setCanTakeExams(false);
+    await setHasReadingAccess(false);
+    await setHasVideoAccess(false);
     await setHasUsedFreeTrial(false);
     await setCanChangeLanguage(false);
     await setHasTimeBasedSubscription(false);
     await setSubscriptionLanguage(null);
+    await setSubscriptionPlan(null);
     if (navigationRef.isReady()) {
       navigationRef.reset({ index: 0, routes: [{ name: 'Login' }] });
     }
@@ -332,7 +377,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         /* ignore */
       }
     }
-  }, [accessToken, setCanChangeLanguage, setHasSubscription, setHasTimeBasedSubscription, setHasUsedFreeTrial, setSignedIn, setSigningOut, setSubscriptionLanguage]);
+  }, [accessToken, setCanChangeLanguage, setCanTakeExams, setHasReadingAccess, setHasSubscription, setHasTimeBasedSubscription, setHasUsedFreeTrial, setHasVideoAccess, setSignedIn, setSigningOut, setSubscriptionLanguage, setSubscriptionPlan]);
 
   useEffect(() => {
     logoutRef.current = logout;
@@ -396,6 +441,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await logout('account_deleted');
   }, [accessToken, userId, logout]);
 
+  const updateProfile = useCallback(async (nextName: string, nextPhone: string) => {
+    if (!accessToken || !userId) {
+      throw new Error('No active session');
+    }
+    const cleanName = nextName.trim();
+    const cleanPhone = nextPhone.trim();
+    await updateUserProfile(userId, accessToken, { name: cleanName, phone: cleanPhone });
+    setName(cleanName);
+    setPhone(cleanPhone);
+    await persistAuth({
+      accessToken,
+      userId,
+      name: cleanName,
+      phone: cleanPhone,
+      subscriptionSummary,
+    });
+  }, [accessToken, userId, subscriptionSummary]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       accessToken,
@@ -408,9 +471,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signup,
       logout,
       deleteAccount,
+      updateProfile,
       refreshProfile,
     }),
-    [accessToken, userId, name, phone, subscriptionSummary, authReady, login, signup, logout, deleteAccount, refreshProfile],
+    [accessToken, userId, name, phone, subscriptionSummary, authReady, login, signup, logout, deleteAccount, updateProfile, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

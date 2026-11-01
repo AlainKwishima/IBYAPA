@@ -1,14 +1,31 @@
 import type { ContentLanguageCode } from '../context/AppFlowContext';
+import type { SubscriptionType } from '../services/api/subscriptionTypes';
 
 export type SubscriptionAccessState = {
   hasSubscription: boolean;
+  canTakeExams?: boolean;
+  hasReadingAccess?: boolean;
+  hasVideoAccess?: boolean;
   canChangeLanguage?: boolean;
   subscriptionLanguage: ContentLanguageCode | null;
+  subscriptionPlan?: SubscriptionType | null;
   contentLanguage: ContentLanguageCode;
 };
 
 export function hasLanguageAccess(state: SubscriptionAccessState): boolean {
   return state.hasSubscription && resolvePaidContentLanguage(state) != null;
+}
+
+export function hasExamAccess(state: SubscriptionAccessState): boolean {
+  return hasLanguageAccess(state) && state.canTakeExams === true;
+}
+
+export function hasReadingAccess(state: SubscriptionAccessState): boolean {
+  return hasLanguageAccess(state) && state.hasReadingAccess === true;
+}
+
+export function hasVideoAccess(state: SubscriptionAccessState): boolean {
+  return hasLanguageAccess(state) && state.hasVideoAccess === true;
 }
 
 /**

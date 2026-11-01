@@ -37,6 +37,7 @@ import {
 } from '../utils/validation';
 import { PaymentMethodLogo, type PaymentMethodLogoKey } from '../components/PaymentMethodLogo';
 import { colors, radii, shadows, spacing, typography } from '../constants/theme';
+import { TABLET_COLUMN_MAX } from '../utils/layoutMetrics';
 
 const PAYMENT_METHODS: Array<{ key: PaymentMethodLogoKey; labelKey: 'payment.methodMomo' | 'payment.methodAirtel' | 'payment.methodCard' }> = [
   { key: 'momo', labelKey: 'payment.methodMomo' },
@@ -214,6 +215,131 @@ function ProcessingDots() {
   );
 }
 
+export function PaymentConfirmationModal({
+  visible,
+  planTitle,
+  amountFormatted,
+  method,
+  phone,
+  cardNumberLast4,
+  onConfirm,
+  onCancel,
+  confirmBusy,
+}: {
+  visible: boolean;
+  planTitle: string;
+  amountFormatted: string;
+  method: 'momo' | 'airtel' | 'card';
+  phone?: string;
+  cardNumberLast4?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  confirmBusy?: boolean;
+}) {
+  const { t } = useI18n();
+  const isCard = method === 'card';
+  const methodLabel =
+    method === 'momo'
+      ? t('payment.methodMomo')
+      : method === 'airtel'
+        ? t('payment.methodAirtel')
+        : t('payment.methodCard');
+
+  const promptMessage = isCard
+    ? t('payment.confirmPromptCard', { amount: amountFormatted })
+    : method === 'momo'
+      ? t('payment.confirmPromptMomo', { amount: amountFormatted, phone: phone ?? '' })
+      : t('payment.confirmPromptAirtel', { amount: amountFormatted, phone: phone ?? '' });
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={confirmBusy ? undefined : onCancel}
+    >
+      <Pressable style={styles.confirmBackdrop} onPress={confirmBusy ? undefined : onCancel}>
+        <Pressable style={styles.confirmCard} onPress={(event) => event.stopPropagation()}>
+          <View style={styles.confirmHeader}>
+            <View style={styles.confirmHeaderIcon}>
+              <MaterialCommunityIcons name="shield-check" size={24} color={colors.brand} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText style={styles.confirmTitle}>{t('payment.confirmTitle')}</AppText>
+            </View>
+            {!confirmBusy ? (
+              <TouchableOpacity onPress={onCancel} style={styles.confirmCloseBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close" size={20} color={colors.inkMuted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          <View style={styles.confirmSummaryBox}>
+            <View style={styles.confirmRow}>
+              <AppText style={styles.confirmLabel}>{t('payment.planLabel')}</AppText>
+              <AppText style={styles.confirmValue}>{planTitle}</AppText>
+            </View>
+            <View style={styles.confirmRow}>
+              <AppText style={styles.confirmLabel}>{t('payment.amount')}</AppText>
+              <AppText style={styles.confirmAmountHighlight}>{amountFormatted} RWF</AppText>
+            </View>
+            <View style={styles.confirmRow}>
+              <AppText style={styles.confirmLabel}>{t('payment.selectMethod')}</AppText>
+              <View style={styles.confirmMethodBadge}>
+                <PaymentMethodLogo method={method} height={18} />
+                <AppText style={styles.confirmMethodText}>{methodLabel}</AppText>
+              </View>
+            </View>
+            <View style={[styles.confirmRow, { borderBottomWidth: 0 }]}>
+              <AppText style={styles.confirmLabel}>
+                {isCard ? t('payment.cardNumber') : t('payment.phoneLabel')}
+              </AppText>
+              <AppText style={styles.confirmPhoneValue}>
+                {isCard ? (cardNumberLast4 ? `•••• •••• •••• ${cardNumberLast4}` : 'Card') : phone}
+              </AppText>
+            </View>
+          </View>
+
+          <View style={styles.confirmPromptBox}>
+            <Ionicons name="information-circle-outline" size={18} color={colors.brandStrong} />
+            <AppText style={styles.confirmPromptText} lines={null}>
+              {promptMessage}
+            </AppText>
+          </View>
+
+          <View style={styles.confirmActions}>
+            <TouchableOpacity
+              style={[styles.confirmCancelBtn, confirmBusy && { opacity: 0.5 }]}
+              onPress={onCancel}
+              disabled={confirmBusy}
+              activeOpacity={0.7}
+            >
+              <AppText style={styles.confirmCancelText}>{t('common.cancel')}</AppText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.confirmProceedBtn, confirmBusy && { opacity: 0.7 }]}
+              onPress={onConfirm}
+              disabled={confirmBusy}
+              activeOpacity={0.88}
+            >
+              {confirmBusy ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <AppText style={styles.confirmProceedText}>{t('payment.confirmAndPay')}</AppText>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 type Plan = {
   titleKey: string;
   price: string;
@@ -242,10 +368,10 @@ const PLAN_FEATURES_BY_LANGUAGE: Record<'rw' | 'en_fr', Record<SubscriptionType,
     'two-exams': ['payment.feature.exams2', 'payment.feature.noVideo', 'payment.feature.noReading', 'payment.feature.attempts2'],
   },
   en_fr: {
-    monthly: ['payment.feature.unlimited', 'payment.feature.readingAccess', 'payment.feature.duration30d'],
-    'two-weekly': ['payment.feature.unlimited', 'payment.feature.readingAccess', 'payment.feature.duration14d'],
-    weekly: ['payment.feature.unlimited', 'payment.feature.readingAccess', 'payment.feature.duration7d'],
-    daily: ['payment.feature.unlimited', 'payment.feature.duration24h'],
+    monthly: ['payment.feature.unlimited', 'payment.feature.videoAccess', 'payment.feature.readingAccess', 'payment.feature.duration30d'],
+    'two-weekly': ['payment.feature.unlimited', 'payment.feature.videoAccess', 'payment.feature.readingAccess', 'payment.feature.duration14d'],
+    weekly: ['payment.feature.unlimited', 'payment.feature.videoAccess', 'payment.feature.readingAccess', 'payment.feature.duration7d'],
+    daily: ['payment.feature.unlimited', 'payment.feature.videoAccess', 'payment.feature.readingAccess', 'payment.feature.duration24h'],
     'five-exams': ['payment.feature.exams5', 'payment.feature.noVideo', 'payment.feature.noReading', 'payment.feature.attempts5'],
     'two-exams': ['payment.feature.exams2', 'payment.feature.noVideo', 'payment.feature.noReading', 'payment.feature.attempts2'],
   },
@@ -664,7 +790,7 @@ export function SubscriptionNativeScreen({ navigation }: SubscriptionProps) {
       <Header title={t('subscription.title')} onBack={() => navigation.goBack()} navigation={navigation} />
       <View style={styles.body}>
         <ScrollView
-          contentContainerStyle={[styles.scrollPad, { paddingBottom: tabScrollBottomPad + 40 }]}
+          contentContainerStyle={[styles.scrollPad, { paddingBottom: tabScrollBottomPad }]}
           showsVerticalScrollIndicator={false}
         >
           <AppText style={styles.subHeading}>{t('payment.investTitle')}</AppText>
@@ -714,10 +840,6 @@ export function SubscriptionNativeScreen({ navigation }: SubscriptionProps) {
             </>
           )}
 
-          <View style={styles.customPlanCard}>
-            <AppText style={styles.customPlanTitle}>{t('payment.customTitle')}</AppText>
-            <AppText style={styles.customPlanText}>{t('payment.customBody')}</AppText>
-          </View>
         </ScrollView>
       </View>
       <BottomTabs navigation={navigation} />
@@ -730,9 +852,6 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
   const { tabScrollBottomPad, scale, shortSide } = useResponsiveLayout();
   const { accessToken, refreshProfile, phone: profilePhone, userId } = useAuth();
   const {
-    setHasSubscription,
-    setCanChangeLanguage,
-    setSubscriptionLanguage,
     contentLanguage,
     hasSubscription,
   } = useAppFlow();
@@ -756,7 +875,9 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
   const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [checkingPending, setCheckingPending] = useState(false);
   const [statusModal, setStatusModal] = useState<PaymentStatusModalState | null>(null);
-  const autoResumeKeyRef = useRef<string | null>(null);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [validatedTargetPhone, setValidatedTargetPhone] = useState('');
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -906,14 +1027,11 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
   };
   const handleTerminalPaymentStatus = async (
     payload: unknown,
-    fallbackReceipt: ReturnType<typeof extractPaymentReceipt>,
     record?: PendingPaymentRecord | null,
   ): Promise<boolean> => {
     const status = resolvePaymentStatus(payload);
     if (status === 'success') {
-      const receipt = extractPaymentReceipt(payload, paymentLanguage);
-      await finalizeSuccessfulPayment(receipt.orderId ? receipt : fallbackReceipt);
-      return true;
+      return await finalizeSuccessfulPayment(record);
     }
     if (status === 'cancelled') {
       await clearPendingState();
@@ -935,26 +1053,34 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
     setPendingPayment(null);
     setCheckoutUrl(null);
     setCheckoutVisible(false);
-    autoResumeKeyRef.current = null;
+
     await clearPendingPayment();
   };
 
-  const finalizeSuccessfulPayment = async (
-    receipt: ReturnType<typeof extractPaymentReceipt>,
-  ) => {
-    let confirmedByProfile = false;
+  const finalizeSuccessfulPayment = async (record?: PendingPaymentRecord | null) => {
+    let lastResult: Awaited<ReturnType<typeof refreshProfile>> | null = null;
     for (let i = 0; i < 3; i += 1) {
-      const result = await refreshProfile();
-      confirmedByProfile = result.hasSubscription === true;
-      if (confirmedByProfile) break;
+      lastResult = await refreshProfile();
+      if (lastResult.status === 'active' && lastResult.hasSubscription === true) {
+        await clearPendingState();
+        showSuccessModal();
+        return true;
+      }
+      if (lastResult.status === 'inactive' && i === 2) {
+        await clearPendingState();
+        showFailedModal(t('payment.status.failedBody'));
+        return true;
+      }
       await sleep(1500);
     }
 
-    await setHasSubscription(true);
-    await setCanChangeLanguage(subscriptionType === 'monthly');
-    await setSubscriptionLanguage(paymentLanguage);
     await clearPendingState();
-    showSuccessModal();
+    if (lastResult?.status === 'unknown') {
+      showTimeoutModal(record);
+    } else {
+      showFailedModal(t('payment.status.failedBody'));
+    }
+    return true;
   };
 
   const persistPending = async (
@@ -982,7 +1108,7 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
     return record;
   };
 
-  const resumePendingPayment = async (record: PendingPaymentRecord, receiptOverride?: ReturnType<typeof extractPaymentReceipt>) => {
+  const resumePendingPayment = async (record: PendingPaymentRecord) => {
     if (!accessToken) {
       showFailedModal(t('payment.needSignIn'));
       return;
@@ -998,7 +1124,7 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
         lang: record.language,
       }, 10);
 
-      if (await handleTerminalPaymentStatus(statusPayload, receiptOverride ?? extractPaymentReceipt(statusPayload, record.language), record)) {
+      if (await handleTerminalPaymentStatus(statusPayload, record)) {
         return;
       }
 
@@ -1037,13 +1163,13 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
       const nextCheckoutUrl = extractCheckoutLink(statusPayload) ?? checkoutUrl;
 
       if (looksLikeSuccessfulPayment(statusPayload)) {
-        await finalizeSuccessfulPayment(receipt);
+        await finalizeSuccessfulPayment(null);
         return true;
       }
 
       const status = resolvePaymentStatus(statusPayload);
       if (status === 'cancelled' || status === 'failed') {
-        await handleTerminalPaymentStatus(statusPayload, receipt, null);
+        await handleTerminalPaymentStatus(statusPayload, null);
         return true;
       }
 
@@ -1078,14 +1204,11 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
     return false;
   };
 
-  useEffect(() => {
-    if (!pendingPayment || !accessToken || payBusy || checkingPending || pendingPayment.checkoutUrl) return;
-    if (autoResumeKeyRef.current === pendingPayment.reqRef) return;
-    autoResumeKeyRef.current = pendingPayment.reqRef;
-    void resumePendingPayment(pendingPayment);
-  }, [accessToken, checkingPending, payBusy, pendingPayment]);
+  // Auto-resume removed: Selecting a plan or opening the payment screen only displays the checkout details.
+  // Payment processing begins ONLY after the user enters their phone number and explicitly confirms.
 
-  const submitPayment = async () => {
+  const handlePressPayNow = () => {
+    if (isSubmittingRef.current || payBusy || checkingPending) return;
     if (!accessToken) {
       showFailedModal(t('payment.needSignIn'));
       return;
@@ -1094,10 +1217,7 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
       showPendingModal(t('payment.loadingPlans'));
       return;
     }
-    if (pendingPayment) {
-      await resumePendingPayment(pendingPayment);
-      return;
-    }
+
     if (!isCard) {
       const rawPhone = phoneInput.trim();
       if (!rawPhone) {
@@ -1110,67 +1230,8 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
         return;
       }
       setFieldErrors({});
-      setPayBusy(true);
-      showProcessingModal();
-      try {
-        const body = {
-          amount: amountRwf,
-          payment_method: method,
-          phone: local,
-          subscription_type: subscriptionType,
-          language: paymentLanguage,
-          lang: paymentLanguage,
-        } as const;
-        const paymentPayload =
-          method === 'momo'
-            ? await initiateMomoPayment(body, accessToken)
-            : await initiateAirtelPayment(body, accessToken);
-        const receipt = extractPaymentReceipt(paymentPayload, paymentLanguage);
-        const reqRef = extractReqRef(paymentPayload);
-        const reference = reqRef ?? extractPaymentReference(paymentPayload) ?? receipt.orderId.replace(/^#/, '');
-        const probe = reqRef
-          ? { reqRef, req_ref: reqRef, requestRef: reqRef, language: paymentLanguage, lang: paymentLanguage }
-          : buildPaymentProbe(body, reference);
-
-        let createdPending: PendingPaymentRecord | null = null;
-        if (reqRef) {
-          createdPending = await persistPending(reqRef, receipt, null, local);
-        }
-
-        const confirmedPayload = looksLikeSuccessfulPayment(paymentPayload)
-          ? paymentPayload
-          : reference
-            ? await waitForPaymentConfirmation(probe)
-            : paymentPayload;
-
-        if (await handleTerminalPaymentStatus(confirmedPayload, receipt, createdPending)) {
-          return;
-        }
-        throw new Error(extractPaymentMessage(confirmedPayload) ?? getMessageFromUnknownError(confirmedPayload));
-      } catch (e) {
-        if (e instanceof ApiError && (e.status === 0 || e.status === 408)) {
-          const recovered = await recoverAmbiguousPayment(
-            buildPaymentProbe(
-              {
-                amount: amountRwf,
-                payment_method: method,
-                phone: local,
-                subscription_type: subscriptionType,
-                language: paymentLanguage,
-              },
-              null,
-            ),
-            extractPaymentReceipt({}, paymentLanguage),
-            method,
-            local,
-          );
-          if (recovered) return;
-        }
-        const msg = getMessageFromUnknownError(e);
-        showFailedModal(msg);
-      } finally {
-        setPayBusy(false);
-      }
+      setValidatedTargetPhone(local);
+      setConfirmModalVisible(true);
       return;
     }
 
@@ -1187,21 +1248,77 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
       setFieldErrors(err);
       return;
     }
-    if (!fallbackCardPhone) {
+    const cardPhone = (phoneInput.trim() ? toLocalRwandaPhone(phoneInput.trim()) : null) || fallbackCardPhone;
+    if (!cardPhone) {
       showFailedModal(t('payment.phoneInvalid'));
       return;
     }
     setFieldErrors({});
+    setValidatedTargetPhone(cardPhone);
+    setConfirmModalVisible(true);
+  };
 
+  const handleConfirmPayment = () => {
+    if (isSubmittingRef.current || payBusy) return;
+    setConfirmModalVisible(false);
+    void executePayment(validatedTargetPhone);
+  };
+
+  const executePayment = async (targetPhone: string) => {
+    if (isSubmittingRef.current || payBusy) return;
+    isSubmittingRef.current = true;
     setPayBusy(true);
     showProcessingModal();
+
     try {
+      // Clear any prior stale pending payment before initiating new transaction
+      await clearPendingPayment();
+      setPendingPayment(null);
+
+      if (!isCard) {
+        const body = {
+          amount: amountRwf,
+          payment_method: method,
+          phone: targetPhone,
+          subscription_type: subscriptionType,
+          language: paymentLanguage,
+          lang: paymentLanguage,
+        } as const;
+        const paymentPayload =
+          method === 'momo'
+            ? await initiateMomoPayment(body, accessToken!)
+            : await initiateAirtelPayment(body, accessToken!);
+        const receipt = extractPaymentReceipt(paymentPayload, paymentLanguage);
+        const reqRef = extractReqRef(paymentPayload);
+        const reference = reqRef ?? extractPaymentReference(paymentPayload) ?? receipt.orderId.replace(/^#/, '');
+        const probe = reqRef
+          ? { reqRef, req_ref: reqRef, requestRef: reqRef, language: paymentLanguage, lang: paymentLanguage }
+          : buildPaymentProbe(body, reference);
+
+        let createdPending: PendingPaymentRecord | null = null;
+        if (reqRef) {
+          createdPending = await persistPending(reqRef, receipt, null, targetPhone);
+        }
+
+        const confirmedPayload = looksLikeSuccessfulPayment(paymentPayload)
+          ? paymentPayload
+          : reference
+            ? await waitForPaymentConfirmation(probe)
+            : paymentPayload;
+
+        if (await handleTerminalPaymentStatus(confirmedPayload, createdPending)) {
+          return;
+        }
+        throw new Error(extractPaymentMessage(confirmedPayload) ?? getMessageFromUnknownError(confirmedPayload));
+      }
+
+      // Card payment flow
       const paymentPayload = await initiateCardPayment(
         {
           amount: amountRwf,
           payment_method: 'card',
           subscription_type: subscriptionType,
-          phone: fallbackCardPhone,
+          phone: targetPhone,
           language: paymentLanguage,
           lang: paymentLanguage,
           card_number: digitsOnly(cardNumber),
@@ -1209,7 +1326,7 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
           card_cvc: digitsOnly(cardCvv),
           card_expdate: cardExpiry.trim(),
         },
-        accessToken,
+        accessToken!,
       );
       const receipt = extractPaymentReceipt(paymentPayload, paymentLanguage);
       const reqRef = extractReqRef(paymentPayload);
@@ -1217,7 +1334,7 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
       const reference = reqRef ?? extractPaymentReference(paymentPayload) ?? receipt.orderId.replace(/^#/, '');
 
       if (reqRef) {
-        await persistPending(reqRef, receipt, nextCheckoutUrl, fallbackCardPhone);
+        await persistPending(reqRef, receipt, nextCheckoutUrl, targetPhone);
       }
 
       if (nextCheckoutUrl) {
@@ -1227,7 +1344,7 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
 
       const immediateStatus = resolvePaymentStatus(paymentPayload);
       if (immediateStatus === 'success' || immediateStatus === 'cancelled' || immediateStatus === 'failed') {
-        await handleTerminalPaymentStatus(paymentPayload, receipt, null);
+        await handleTerminalPaymentStatus(paymentPayload, null);
         return;
       }
 
@@ -1244,10 +1361,9 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
               createdAt: new Date().toISOString(),
               orderId: receipt.orderId,
               checkoutUrl: nextCheckoutUrl,
-              phone: fallbackCardPhone,
+              phone: targetPhone,
               userId,
             },
-            receipt,
           );
         } else if (!nextCheckoutUrl && !reqRef) {
           showTimeoutModal(null);
@@ -1262,22 +1378,23 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
           buildPaymentProbe(
             {
               amount: amountRwf,
-              payment_method: 'card',
-              phone: fallbackCardPhone,
+              payment_method: method,
+              phone: targetPhone,
               subscription_type: subscriptionType,
               language: paymentLanguage,
             },
             null,
           ),
           extractPaymentReceipt({}, paymentLanguage),
-          'card',
-          fallbackCardPhone,
+          method,
+          targetPhone,
         );
         if (recovered) return;
       }
       showFailedModal(getMessageFromUnknownError(e));
     } finally {
       setPayBusy(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -1304,6 +1421,36 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
               <AppText style={styles.amountBlue}>{amountFormatted} RWF</AppText>
             </View>
           </View>
+
+          {pendingPayment ? (
+            <View style={styles.pendingBannerCard}>
+              <View style={styles.pendingBannerIcon}>
+                <Ionicons name="time-outline" size={20} color="#B45309" />
+              </View>
+              <View style={{ flex: 1, marginRight: spacing.sm }}>
+                <AppText style={styles.pendingBannerTitle}>
+                  {t('payment.pendingBannerTitle')}
+                </AppText>
+                <AppText style={styles.pendingBannerBody} lines={2}>
+                  {t('payment.pendingBannerBody', { plan: pendingPayment.planTitle })}
+                </AppText>
+              </View>
+              <TouchableOpacity
+                style={styles.pendingBannerCheckBtn}
+                onPress={() => void resumePendingPayment(pendingPayment)}
+                disabled={payBusy || checkingPending}
+              >
+                <AppText style={styles.pendingBannerCheckText}>{t('payment.checkStatus')}</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.pendingBannerDismissBtn}
+                onPress={() => void clearPendingState()}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close" size={16} color={colors.inkMuted} />
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           <View style={styles.paymentSectionCard}>
             <AppText style={styles.sectionTitle}>{t('payment.selectMethod')}</AppText>
@@ -1439,18 +1586,19 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.payNowBtn} onPress={() => void submitPayment()} disabled={payBusy || checkingPending}>
+          <TouchableOpacity
+            style={styles.payNowBtn}
+            onPress={handlePressPayNow}
+            disabled={payBusy || checkingPending}
+            activeOpacity={0.88}
+          >
             {payBusy || checkingPending ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <>
                 <MaterialCommunityIcons name="lock-outline" size={16} color="#FFFFFF" />
                 <AppText style={styles.payNowText}>
-                  {pendingPayment
-                    ? t('payment.resumePending')
-                    : hasSubscription
-                      ? t('payment.completeUpdate')
-                      : t('payment.payNow')}
+                  {hasSubscription ? t('payment.completeUpdate') : t('payment.payNow')}
                 </AppText>
               </>
             )}
@@ -1486,6 +1634,17 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
           </View>
         </View>
       </Modal>
+      <PaymentConfirmationModal
+        visible={confirmModalVisible}
+        planTitle={planTitle}
+        amountFormatted={amountFormatted}
+        method={method}
+        phone={validatedTargetPhone}
+        cardNumberLast4={cardNumber.replace(/\D/g, '').slice(-4)}
+        onConfirm={handleConfirmPayment}
+        onCancel={() => setConfirmModalVisible(false)}
+        confirmBusy={payBusy}
+      />
       <PaymentStatusModal state={statusModal} onDismiss={() => setStatusModal(null)} />
     </ScreenColumn>
   );
@@ -1596,15 +1755,6 @@ const styles = StyleSheet.create({
   },
   startNowText: { fontFamily: 'Poppins-ExtraBold', fontSize: 15, color: colors.brand },
   startNowTextActive: { color: colors.brand },
-  customPlanCard: {
-    marginTop: 14,
-    borderRadius: radii.lg,
-    backgroundColor: colors.amberSoft,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  customPlanTitle: { ...typography.title, color: colors.ink },
-  customPlanText: { marginTop: 4, textAlign: 'center', fontFamily: 'Poppins-Regular', fontSize: 12, lineHeight: 17, color: '#6B7280' },
   pricingStatusCard: {
     marginTop: 12,
     borderRadius: 10,
@@ -1939,6 +2089,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   checkoutSheet: {
+    width: '100%',
+    maxWidth: TABLET_COLUMN_MAX,
+    alignSelf: 'center',
     height: '88%',
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.xl,
@@ -1987,4 +2140,186 @@ const styles = StyleSheet.create({
   tabBubbleActive: { backgroundColor: colors.brand },
   tabText: { marginTop: 2, fontFamily: 'Poppins-Medium', fontSize: 12, lineHeight: 14, color: '#6B7280' },
   tabTextActive: { color: colors.brand },
+
+  pendingBannerCard: {
+    marginTop: spacing.md,
+    borderRadius: radii.lg,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pendingBannerIcon: {
+    marginRight: spacing.sm,
+  },
+  pendingBannerTitle: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 12,
+    color: '#92400E',
+  },
+  pendingBannerBody: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 11,
+    color: '#B45309',
+    marginTop: 2,
+  },
+  pendingBannerCheckBtn: {
+    backgroundColor: '#92400E',
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    marginRight: spacing.xs,
+  },
+  pendingBannerCheckText: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 11,
+    color: '#FFFFFF',
+  },
+  pendingBannerDismissBtn: {
+    padding: 4,
+  },
+
+  confirmBackdrop: {
+    flex: 1,
+    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 480,
+    borderRadius: 22,
+    padding: spacing.xl,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    ...shadows.floating,
+  },
+  confirmHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  confirmHeaderIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.brandSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  confirmTitle: {
+    fontFamily: 'Poppins-ExtraBold',
+    fontSize: 18,
+    lineHeight: 24,
+    color: colors.ink,
+  },
+  confirmCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceAlt,
+  },
+  confirmSummaryBox: {
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  confirmRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+  confirmLabel: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 12,
+    color: colors.inkMuted,
+  },
+  confirmValue: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 13,
+    color: colors.ink,
+  },
+  confirmAmountHighlight: {
+    fontFamily: 'Poppins-ExtraBold',
+    fontSize: 15,
+    color: colors.brand,
+  },
+  confirmMethodBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  confirmMethodText: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 12,
+    color: colors.ink,
+  },
+  confirmPhoneValue: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 13,
+    color: colors.ink,
+  },
+  confirmPromptBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.brandSoft,
+    gap: spacing.sm,
+  },
+  confirmPromptText: {
+    flex: 1,
+    fontFamily: 'Poppins-Regular',
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.brandStrong,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+  confirmCancelBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmCancelText: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 14,
+    color: colors.inkMuted,
+  },
+  confirmProceedBtn: {
+    flex: 1.5,
+    height: 48,
+    borderRadius: radii.pill,
+    backgroundColor: colors.brand,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmProceedText: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
 });

@@ -4,7 +4,7 @@ import type { EdgeInsets } from 'react-native-safe-area-context';
 export const PHONE_COLUMN_MAX = 430;
 
 /** Readable max width on tablets / large windows (centered column). */
-export const TABLET_COLUMN_MAX = 800;
+export const TABLET_COLUMN_MAX = 744;
 
 export const TABLET_SHORT_SIDE_BREAKPOINT = 600;
 

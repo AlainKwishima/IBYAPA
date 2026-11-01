@@ -1,13 +1,12 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppText, shrinkableTextContainer } from './AppText';
 
 import { MIN_TOUCH_TARGET } from '../constants/accessibility';
 import { colors, spacing, typography } from '../constants/theme';
-import { useResponsiveMetrics } from '../utils/responsive';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 type ScreenHeaderProps = {
   title: string;
@@ -15,11 +14,12 @@ type ScreenHeaderProps = {
 };
 
 export function ScreenHeader({ title, onBack }: ScreenHeaderProps) {
-  const insets = useSafeAreaInsets();
-  const r = useResponsiveMetrics();
+  const r = useResponsiveLayout();
+  const viewportWidth = Math.max(0, r.width - r.insets.left - r.insets.right);
+  const sideOffset = Math.max(0, (viewportWidth - r.contentMaxWidth) / 2);
   return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, r.verticalScale(12)), minHeight: r.verticalScale(52), paddingHorizontal: r.scale(spacing.lg) }]}>
-      <View style={[styles.row, { minHeight: r.verticalScale(54), paddingBottom: r.verticalScale(spacing.xs) }]}>
+    <View style={[styles.container, { width: viewportWidth, marginLeft: -sideOffset, minHeight: r.verticalScale(52) }]}>
+      <View style={[styles.row, { width: r.contentMaxWidth, alignSelf: 'center', minHeight: r.verticalScale(54), paddingBottom: r.verticalScale(spacing.xs), paddingHorizontal: r.scale(spacing.lg) }]}>
         <Pressable onPress={onBack} style={[styles.back, { minWidth: r.touch(MIN_TOUCH_TARGET), minHeight: r.touch(MIN_TOUCH_TARGET) }]} disabled={!onBack} hitSlop={8}>
           {onBack ? <Ionicons name="chevron-back" size={r.icon(24)} color={colors.white} /> : null}
         </Pressable>
@@ -33,7 +33,6 @@ export function ScreenHeader({ title, onBack }: ScreenHeaderProps) {
           styles.curveOverlay,
           {
             height: r.verticalScale(16),
-            marginHorizontal: -r.scale(spacing.lg),
             borderTopLeftRadius: r.radius(22),
             borderTopRightRadius: r.radius(22),
           },
