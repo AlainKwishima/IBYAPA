@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Non-app folders
+NKOTANYI screens/
+downloaded-reading-files/
+reports/
+output/
+tmp/
+tmp_signs/
+docs/
+.agents/
+.github/
+
+# Expo & Web
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native generated
+/ios
+/android
+
+# Misc
+*.log
+*.tsbuildinfo
