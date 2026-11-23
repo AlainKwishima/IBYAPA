@@ -25,3 +25,5 @@ expo-env.d.ts
 # Misc
 *.log
 *.tsbuildinfo
+*.aab
+*.apk
