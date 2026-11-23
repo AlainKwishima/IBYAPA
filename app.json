@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ibyapa.app",
-      "buildNumber": "17",
+      "buildNumber": "18",
       "infoPlist": {
         "UIRequiresFullScreen": false,
         "ITSAppUsesNonExemptEncryption": false

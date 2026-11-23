@@ -13,6 +13,7 @@ import { ScreenColumn } from '../components/ScreenColumn';
 import { AppHeader } from '../components/AppHeader';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAppFlow } from '../context/AppFlowContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { useAuth } from '../context/AuthContext';
 import {
   checkPaymentStatus,
@@ -45,9 +46,8 @@ const PAYMENT_METHODS: Array<{ key: PaymentMethodLogoKey; labelKey: 'payment.met
   { key: 'card', labelKey: 'payment.methodCard' },
 ];
 
-type SubscriptionProps = NativeStackScreenProps<RootStackParamList, 'SubscriptionNative'>;
 type PaymentProps = NativeStackScreenProps<RootStackParamList, 'PaymentNative'>;
-type Nav = SubscriptionProps['navigation'] | PaymentProps['navigation'];
+type Nav = PaymentProps['navigation'];
 export type PaymentStatusKind = 'processing' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
 export type PaymentStatusModalState = {
   kind: PaymentStatusKind;
@@ -764,90 +764,8 @@ function PlanCardSkeleton({ isActive }: { isActive?: boolean }) {
   );
 }
 
-export function SubscriptionNativeScreen({ navigation }: SubscriptionProps) {
-  const { t } = useI18n();
-  const { tabScrollBottomPad } = useResponsiveLayout();
-  const { accessToken } = useAuth();
-  const { hasSubscription, contentLanguage } = useAppFlow();
-  const { data: plans = [], isPending: pricingLoading, error: queryError, refetch } = useQuery({
-    queryKey: ['subscriptionPlans', contentLanguage],
-    queryFn: async () => {
-      const livePlans = await fetchLiveSubscriptionPlans(contentLanguage);
-      const locale = localeTagForContentLanguage(contentLanguage);
-      return [...livePlans]
-        .sort((a, b) => a.amountRwf - b.amountRwf)
-        .map((plan) => toPlanCard(plan, locale));
-    }
-  });
-
-  const pricingError = queryError ? getMessageFromUnknownError(queryError) : null;
-  const [activePlanIndex, setActivePlanIndex] = useState(0);
-  const planActionLabel = hasSubscription ? t('payment.renewOrChangePlan') : t('payment.startNow');
-
-
-  return (
-    <ScreenColumn>
-      <Header title={t('subscription.title')} onBack={() => navigation.goBack()} navigation={navigation} />
-      <View style={styles.body}>
-        <ScrollView
-          contentContainerStyle={[styles.scrollPad, { paddingBottom: tabScrollBottomPad }]}
-          showsVerticalScrollIndicator={false}
-        >
-          <AppText style={styles.subHeading}>{t('payment.investTitle')}</AppText>
-          <AppText style={styles.subLead}>{t('payment.investBody')}</AppText>
-
-          {hasSubscription ? (
-            <View style={styles.renewBanner}>
-              <Ionicons name="information-circle-outline" size={20} color="#1E3A8A" />
-              <AppText style={styles.renewBannerText}>{t('payment.activePlanRenewHint')}</AppText>
-            </View>
-          ) : null}
-
-          {pricingLoading ? (
-            <View style={{ marginTop: 8 }}>
-              <AppText style={styles.amountSectionTitle}>{t('payment.selectAmountTitle')}</AppText>
-              <PlanCardSkeleton isActive={true} />
-              <PlanCardSkeleton isActive={false} />
-              <PlanCardSkeleton isActive={false} />
-            </View>
-          ) : pricingError ? (
-            <View style={styles.pricingStatusCard}>
-              <AppText style={styles.pricingStatusError}>{pricingError}</AppText>
-            </View>
-          ) : (
-            <>
-              <AppText style={styles.amountSectionTitle}>{t('payment.selectAmountTitle')}</AppText>
-              {plans.map((plan, index) => (
-              <PlanCard
-                key={plan.subscriptionType}
-                plan={plan}
-                isActive={index === activePlanIndex}
-                title={t(PLAN_TITLE_KEYS[plan.subscriptionType])}
-                description={t(PLAN_DESCRIPTION_KEYS[plan.subscriptionType])}
-                featureTexts={PLAN_FEATURES_BY_LANGUAGE[contentLanguage === 'rw' ? 'rw' : 'en_fr'][plan.subscriptionType].map((k) => t(k))}
-                actionLabel={planActionLabel}
-                onPress={() =>
-                  navigation.navigate('PaymentNative', {
-                    planTitle: t(PLAN_TITLE_KEYS[plan.subscriptionType]),
-                    amountRwf: plan.amountRwf,
-                    subscriptionType: plan.subscriptionType,
-                    paymentLanguage: contentLanguage,
-                  })
-                }
-                onCardPress={() => setActivePlanIndex(index)}
-              />
-            ))}
-            </>
-          )}
-
-        </ScrollView>
-      </View>
-      <BottomTabs navigation={navigation} />
-    </ScreenColumn>
-  );
-}
-
 export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const { t } = useI18n();
   const { tabScrollBottomPad, scale, shortSide } = useResponsiveLayout();
   const { accessToken, refreshProfile, phone: profilePhone, userId } = useAuth();
@@ -1412,7 +1330,7 @@ export function PaymentNativeScreen({ navigation, route }: PaymentProps) {
                 <AppText style={styles.planSummaryLabel}>{t('profile.subscriptionPlan')}</AppText>
                 <AppText style={styles.standardDaily}>{planTitle}</AppText>
               </View>
-              <TouchableOpacity style={styles.changePill} onPress={() => navigation.navigate('SubscriptionNative')}>
+              <TouchableOpacity style={styles.changePill} onPress={() => openSubscriptionSheet({ preselectedType: subscriptionType })}>
                 <AppText style={styles.changeLink}>{t('payment.change')}</AppText>
               </TouchableOpacity>
             </View>

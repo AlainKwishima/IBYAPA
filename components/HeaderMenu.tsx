@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../navigation/types';
 import { MIN_TOUCH_TARGET } from '../constants/accessibility';
 import { useAuth } from '../context/AuthContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { useI18n } from '../i18n/useI18n';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { SignOutConfirmationModal } from './SignOutConfirmationModal';
@@ -31,6 +32,7 @@ export function HeaderMenu({
   const insets = useSafeAreaInsets();
   const { shortSide, scale, verticalScale, radius, touch, icon, font, lineHeight } = useResponsiveLayout();
   const { logout } = useAuth();
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const { t } = useI18n();
   const compact = shortSide <= 360;
   const dropdownWidth = scale(compact ? 170 : 186);
@@ -39,7 +41,7 @@ export function HeaderMenu({
   const menuItems = useMemo(
     () => [
       { id: 'profile', labelKey: 'menu.profile' as const, route: 'ProfileNative' as const, icon: 'person-outline' as const },
-      { id: 'subscription', labelKey: 'menu.subscription' as const, route: 'SubscriptionNative' as const, icon: 'card-outline' as const },
+      { id: 'subscription', labelKey: 'menu.subscription' as const, route: null, icon: 'card-outline' as const },
       { id: 'language', labelKey: 'menu.language' as const, route: 'LanguageSettings' as const, icon: 'language-outline' as const },
       { id: 'help', labelKey: 'menu.help' as const, route: 'HelpCenterNative' as const, icon: 'help-circle-outline' as const },
       { id: 'signout', labelKey: 'menu.signOut' as const, route: null, icon: 'log-out-outline' as const },
@@ -47,13 +49,17 @@ export function HeaderMenu({
     [],
   );
 
-  const onSelect = async (route: keyof RootStackParamList | null) => {
+  const onSelect = async (item: (typeof menuItems)[number]) => {
     setOpen(false);
-    if (route === null) {
+    if (item.id === 'subscription') {
+      openSubscriptionSheet();
+      return;
+    }
+    if (item.route === null) {
       setShowSignOutConfirm(true);
       return;
     }
-    navigation.navigate(route as never);
+    navigation.navigate(item.route as never);
   };
 
   return (
@@ -86,7 +92,7 @@ export function HeaderMenu({
                 <TouchableOpacity
                   key={item.id}
                   style={[styles.menuItem, { minHeight: touch(MIN_TOUCH_TARGET), paddingHorizontal: scale(14) }, idx < menuItems.length - 1 && styles.menuItemDivider]}
-                  onPress={() => void onSelect(item.route)}
+                  onPress={() => void onSelect(item)}
                   activeOpacity={0.85}
                 >
                   <Ionicons name={item.icon} size={icon(16)} color={colors.textSecondary} />

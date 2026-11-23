@@ -15,6 +15,7 @@ import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAuth } from '../context/AuthContext';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { getVideos, type VideoItem } from '../services/contentApi';
 import { getMessageFromUnknownError } from '../services/api/client';
 import { useI18n } from '../i18n/useI18n';
@@ -99,6 +100,7 @@ export function VideoCourseListScreen({ navigation }: Props) {
     isSigningOut,
   } = useAppFlow();
   const { openGateModal } = useGateModal();
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const videoAccessGranted = hasVideoAccess({
     hasSubscription,
     hasVideoAccess: videoEntitlement,
@@ -115,7 +117,7 @@ export function VideoCourseListScreen({ navigation }: Props) {
 
   useEffect(() => {
     if (!videoAccessGranted && !isSigningOut) {
-      openGateModal('subscription_watch', () => navigation.navigate('SubscriptionNative'));
+      openGateModal('subscription_watch', () => openSubscriptionSheet());
     }
   }, [isSigningOut, navigation, openGateModal, videoAccessGranted]);
 

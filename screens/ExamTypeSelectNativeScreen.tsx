@@ -10,6 +10,7 @@ import { BottomNavBar } from '../components/BottomNavBar';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { useI18n } from '../i18n/useI18n';
 import { colors, radii, spacing, typography } from '../constants/theme';
 
@@ -20,13 +21,14 @@ export function ExamTypeSelectNativeScreen({ navigation, route }: Props) {
   const { tabScrollBottomPad } = useResponsiveLayout();
   const { hasSubscription, hasUsedFreeTrial, isSigningOut } = useAppFlow();
   const { openGateModal } = useGateModal();
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const trialAccess = route.params?.trial === true && !hasUsedFreeTrial;
 
   useEffect(() => {
     if (hasSubscription || trialAccess || isSigningOut) return;
     openGateModal(
       'subscription_exam',
-      () => navigation.navigate('SubscriptionNative'),
+      () => openSubscriptionSheet(),
       () => navigation.replace('HomeNative'),
     );
   }, [hasSubscription, isSigningOut, navigation, openGateModal, trialAccess]);
@@ -55,7 +57,7 @@ export function ExamTypeSelectNativeScreen({ navigation, route }: Props) {
   const selectExam = (mode: 'traffic' | 'signs') => {
     if (!hasSubscription && !trialAccess) {
       if (!isSigningOut) {
-        openGateModal('subscription_exam', () => navigation.navigate('SubscriptionNative'));
+        openGateModal('subscription_exam', () => openSubscriptionSheet());
       }
       return;
     }

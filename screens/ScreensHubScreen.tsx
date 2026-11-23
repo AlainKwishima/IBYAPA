@@ -9,6 +9,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { ScreenColumn } from '../components/ScreenColumn';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { useI18n } from '../i18n/useI18n';
 import { hasExamAccess, hasReadingAccess, hasVideoAccess } from '../utils/subscriptionAccess';
 import { colors, radii, shadows, spacing, typography } from '../constants/theme';
@@ -31,6 +32,7 @@ export function ScreensHubScreen({ navigation }: Props) {
     isSigningOut,
   } = useAppFlow();
   const { openGateModal } = useGateModal();
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const examAccessGranted = hasExamAccess({
     hasSubscription,
     canTakeExams,
@@ -53,7 +55,7 @@ export function ScreensHubScreen({ navigation }: Props) {
   const gateIfNeeded = (kind: 'exam' | 'read' | 'watch', next: () => void) => {
     if (kind === 'exam') {
       if (!isSigningOut && !examAccessGranted) {
-        openGateModal('subscription_exam', () => navigation.navigate('SubscriptionNative'));
+        openGateModal('subscription_exam', () => openSubscriptionSheet());
         return;
       }
       next();
@@ -62,7 +64,7 @@ export function ScreensHubScreen({ navigation }: Props) {
 
     const accessGranted = kind === 'read' ? readingAccessGranted : videoAccessGranted;
     if (!accessGranted && !isSigningOut) {
-      openGateModal(kind === 'read' ? 'subscription_read' : 'subscription_watch', () => navigation.navigate('SubscriptionNative'));
+      openGateModal(kind === 'read' ? 'subscription_read' : 'subscription_watch', () => openSubscriptionSheet());
       return;
     }
     next();
@@ -145,7 +147,7 @@ export function ScreensHubScreen({ navigation }: Props) {
                 return;
               }
               if (screen.key === 'subscription') {
-                navigation.navigate('SubscriptionNative');
+                openSubscriptionSheet();
                 return;
               }
               if (screen.key === 'payment') {

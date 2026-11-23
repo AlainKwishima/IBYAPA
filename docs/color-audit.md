@@ -18,54 +18,78 @@ The pre-refinement scan contained **141 unique color values across 305 occurrenc
 
 ## Current Inventory
 
-**44 unique values across 243 occurrences**
+**68 unique values across 300 occurrences**
 
 | Color | Count | Intended replacement or exception | Locations |
 | --- | ---: | --- | --- |
-| `#000` | 5 | Black media surface shorthand | `components/YouTubePlayer.tsx:73`<br>`components/YouTubePlayer.web.tsx:47`<br>`screens/AuthScreens.tsx:834`<br>`screens/PerformanceNativeScreens.tsx:1138`<br>`screens/PerformanceNativeScreens.tsx:1352` |
+| `#000` | 5 | Black media surface shorthand | `components/YouTubePlayer.tsx:73`<br>`components/YouTubePlayer.web.tsx:47`<br>`screens/AuthScreens.tsx:877`<br>`screens/PerformanceNativeScreens.tsx:1354`<br>`screens/PerformanceNativeScreens.tsx:1564` |
 | `#000000` | 4 | Black media surface | `components/LanguageOptionCard.tsx:87`<br>`components/YouTubePlayer.tsx:267`<br>`components/YouTubePlayer.tsx:271`<br>`constants/theme.ts:24` |
-| `#10B981` | 9 | Success | `constants/theme.ts:15`<br>`constants/theme.ts:46`<br>`screens/AuthScreens.tsx:809`<br>`screens/AuthScreens.tsx:813`<br>`screens/ExamNativeScreen.tsx:899`<br>`screens/PerformanceNativeScreens.tsx:957`<br>`screens/PerformanceNativeScreens.tsx:1029`<br>`screens/PerformanceNativeScreens.tsx:1265`<br>+1 more |
+| `#065F46` | 2 | Replace with the nearest semantic theme token | `screens/CertificateNativeScreen.tsx:285`<br>`screens/CertificateNativeScreen.tsx:286` |
+| `#06B6D4` | 1 | Replace with the nearest semantic theme token | `screens/TestResultNativeScreen.tsx:16` |
+| `#10B981` | 4 | Success | `screens/AuthScreens.tsx:852`<br>`screens/AuthScreens.tsx:856`<br>`screens/LearningNativeScreens.tsx:1216`<br>`screens/TestResultNativeScreen.tsx:16` |
 | `#111827` | 23 | Text primary | `constants/theme.ts:11`<br>`constants/theme.ts:38`<br>`constants/theme.ts:146`<br>`constants/theme.ts:153`<br>`constants/theme.ts:158`<br>`constants/theme.ts:165`<br>`constants/theme.ts:170`<br>`constants/theme.ts:177`<br>+15 more |
 | `#1C64F2` | 1 | Info / link tint | `constants/theme.ts:21` |
-| `#1E3A8A` | 3 | Dark emphasis | `constants/theme.ts:6`<br>`screens/HomeNativeScreen.tsx:706`<br>`screens/PaymentNativeScreens.tsx:673` |
-| `#2563EB` | 7 | Primary blue | `constants/theme.ts:4`<br>`constants/theme.ts:27`<br>`constants/theme.ts:33`<br>`screens/HelpCenterScreen.tsx:65`<br>`screens/HomeNativeScreen.tsx:54`<br>`screens/HomeNativeScreen.tsx:378`<br>`screens/HomeNativeScreen.tsx:383` |
+| `#1E3A8A` | 3 | Dark emphasis | `components/SubscriptionBottomSheet.tsx:1021`<br>`constants/theme.ts:6`<br>`screens/CertificateNativeScreen.tsx:292` |
+| `#2563EB` | 12 | Primary blue | `constants/theme.ts:4`<br>`constants/theme.ts:15`<br>`constants/theme.ts:27`<br>`constants/theme.ts:33`<br>`constants/theme.ts:46`<br>`screens/ExamNativeScreen.tsx:905`<br>`screens/HelpCenterScreen.tsx:65`<br>`screens/PerformanceNativeScreens.tsx:1173`<br>+4 more |
 | `#2D5FBF` | 2 | Secondary / deep blue | `constants/theme.ts:5`<br>`constants/theme.ts:34` |
-| `#374151` | 12 | Text secondary | `constants/theme.ts:12`<br>`constants/theme.ts:39`<br>`screens/HomeNativeScreen.tsx:711`<br>`screens/LanguageSettingsScreen.tsx:51`<br>`screens/PaymentNativeScreens.tsx:1684`<br>`screens/PaymentNativeScreens.tsx:1871`<br>`screens/PaymentNativeScreens.tsx:1873`<br>`screens/PerformanceNativeScreens.tsx:834`<br>+4 more |
-| `#3B82F6` | 1 | Replace with the nearest semantic theme token | `screens/PdfViewerScreen.tsx:176` |
-| `#6B7280` | 31 | Text muted | `constants/theme.ts:13`<br>`constants/theme.ts:40`<br>`screens/AuthScreens.tsx:329`<br>`screens/AuthScreens.tsx:587`<br>`screens/AuthScreens.tsx:851`<br>`screens/ExamNativeScreen.tsx:592`<br>`screens/PaymentNativeScreens.tsx:1416`<br>`screens/PaymentNativeScreens.tsx:1430`<br>+23 more |
-| `#DCFCE7` | 3 | Success surface | `constants/theme.ts:16`<br>`constants/theme.ts:47`<br>`screens/PerformanceNativeScreens.tsx:1265` |
+| `#374151` | 9 | Text secondary | `constants/theme.ts:12`<br>`constants/theme.ts:39`<br>`screens/PaymentNativeScreens.tsx:1694`<br>`screens/PaymentNativeScreens.tsx:1881`<br>`screens/PaymentNativeScreens.tsx:1883`<br>`screens/PerformanceNativeScreens.tsx:1050`<br>`screens/PerformanceNativeScreens.tsx:1272`<br>`screens/PerformanceNativeScreens.tsx:1486`<br>+1 more |
+| `#3B82F6` | 1 | Replace with the nearest semantic theme token | `screens/PdfViewerScreen.tsx:178` |
+| `#4B5563` | 1 | Replace with the nearest semantic theme token | `screens/CertificateNativeScreen.tsx:296` |
+| `#6B7280` | 30 | Text muted | `constants/theme.ts:13`<br>`constants/theme.ts:40`<br>`screens/AuthScreens.tsx:345`<br>`screens/AuthScreens.tsx:629`<br>`screens/AuthScreens.tsx:894`<br>`screens/ExamNativeScreen.tsx:599`<br>`screens/PaymentNativeScreens.tsx:1415`<br>`screens/PaymentNativeScreens.tsx:1429`<br>+22 more |
+| `#8B5CF6` | 1 | Replace with the nearest semantic theme token | `screens/TestResultNativeScreen.tsx:16` |
+| `#92400E` | 3 | Replace with the nearest semantic theme token | `components/SubscriptionBottomSheet.tsx:1831`<br>`screens/PaymentNativeScreens.tsx:2078`<br>`screens/PaymentNativeScreens.tsx:2087` |
+| `#9CA3AF` | 5 | Replace with the nearest semantic theme token | `components/SubscriptionBottomSheet.tsx:1194`<br>`components/SubscriptionBottomSheet.tsx:1210`<br>`components/SubscriptionBottomSheet.tsx:1227`<br>`components/SubscriptionBottomSheet.tsx:1243`<br>`components/SubscriptionBottomSheet.tsx:1264` |
+| `#A7F3D0` | 2 | Replace with the nearest semantic theme token | `screens/CertificateNativeScreen.tsx:283`<br>`screens/CertificateNativeScreen.tsx:284` |
+| `#B45309` | 4 | Replace with the nearest semantic theme token | `components/SubscriptionBottomSheet.tsx:1135`<br>`components/SubscriptionBottomSheet.tsx:1835`<br>`screens/PaymentNativeScreens.tsx:1346`<br>`screens/PaymentNativeScreens.tsx:2083` |
+| `#BFDBFE` | 1 | Replace with the nearest semantic theme token | `components/SubscriptionBottomSheet.tsx:1635` |
+| `#D8E7FB` | 1 | Replace with the nearest semantic theme token | `screens/HomeNativeScreen.tsx:396` |
+| `#D97706` | 1 | Replace with the nearest semantic theme token | `components/SubscriptionBottomSheet.tsx:1838` |
+| `#DCFCE7` | 1 | Success surface | `components/SubscriptionBottomSheet.tsx:2091` |
 | `#E3242B` | 1 | Approved Airtel provider mark | `constants/theme.ts:29` |
-| `#E5E7EB` | 16 | Border | `constants/theme.ts:14`<br>`constants/theme.ts:41`<br>`screens/AuthScreens.tsx:623`<br>`screens/AuthScreens.tsx:765`<br>`screens/ExamNativeScreen.tsx:873`<br>`screens/HomeNativeScreen.tsx:682`<br>`screens/HomeNativeScreen.tsx:698`<br>`screens/LanguageSettingsScreen.tsx:95`<br>+8 more |
-| `#EFF6FF` | 20 | Light blue tint / info soft | `components/ProgressRing.tsx:80`<br>`constants/theme.ts:10`<br>`constants/theme.ts:22`<br>`constants/theme.ts:35`<br>`constants/theme.ts:36`<br>`screens/AuthScreens.tsx:459`<br>`screens/ExamNativeScreen.tsx:767`<br>`screens/ExamTypeSelectNativeScreen.tsx:151`<br>+12 more |
-| `#F05252` | 11 | Error | `components/PdfDocumentIcon.tsx:21`<br>`constants/theme.ts:19`<br>`constants/theme.ts:42`<br>`constants/theme.ts:48`<br>`screens/HomeNativeScreen.tsx:410`<br>`screens/PaymentNativeScreens.tsx:1691`<br>`screens/PaymentNativeScreens.tsx:1880`<br>`screens/PerformanceNativeScreens.tsx:961`<br>+3 more |
-| `#F3F4F6` | 10 | Surface alt | `constants/theme.ts:9`<br>`screens/ExamNativeScreen.tsx:1014`<br>`screens/LearningNativeScreens.tsx:1098`<br>`screens/PaymentNativeScreens.tsx:1865`<br>`screens/PaymentNativeScreens.tsx:2037`<br>`screens/PerformanceNativeScreens.tsx:833`<br>`screens/PerformanceNativeScreens.tsx:1044`<br>`screens/PerformanceNativeScreens.tsx:1050`<br>+2 more |
-| `#F59E0B` | 2 | Warning | `constants/theme.ts:17`<br>`constants/theme.ts:44` |
-| `#F9FAFB` | 7 | Background | `constants/theme.ts:7`<br>`constants/theme.ts:37`<br>`screens/PaymentNativeScreens.tsx:2026`<br>`screens/PdfViewerScreen.tsx:48`<br>`screens/PerformanceNativeScreens.tsx:1040`<br>`screens/PerformanceNativeScreens.tsx:1179`<br>`screens/PerformanceNativeScreens.tsx:1355` |
-| `#FDE8E8` | 6 | Error surface | `components/PdfDocumentIcon.tsx:41`<br>`constants/theme.ts:20`<br>`constants/theme.ts:43`<br>`constants/theme.ts:49`<br>`screens/LearningNativeScreens.tsx:1090`<br>`screens/PerformanceNativeScreens.tsx:1266` |
+| `#E5E7EB` | 14 | Border | `constants/theme.ts:14`<br>`constants/theme.ts:41`<br>`screens/AuthScreens.tsx:665`<br>`screens/AuthScreens.tsx:807`<br>`screens/ExamNativeScreen.tsx:879`<br>`screens/HomeNativeScreen.tsx:562`<br>`screens/PaymentNativeScreens.tsx:1874`<br>`screens/PaymentNativeScreens.tsx:1882`<br>+6 more |
+| `#ECFDF5` | 1 | Replace with the nearest semantic theme token | `screens/CertificateNativeScreen.tsx:284` |
+| `#EF4444` | 1 | Replace with the nearest semantic theme token | `screens/TestResultNativeScreen.tsx:16` |
+| `#EFF6FF` | 24 | Light blue tint / info soft | `components/ProgressRing.tsx:80`<br>`components/SubscriptionBottomSheet.tsx:1085`<br>`constants/theme.ts:10`<br>`constants/theme.ts:16`<br>`constants/theme.ts:22`<br>`constants/theme.ts:35`<br>`constants/theme.ts:36`<br>`constants/theme.ts:47`<br>+16 more |
+| `#F05252` | 13 | Error | `components/PdfDocumentIcon.tsx:21`<br>`constants/theme.ts:17`<br>`constants/theme.ts:19`<br>`constants/theme.ts:42`<br>`constants/theme.ts:44`<br>`constants/theme.ts:48`<br>`screens/HomeNativeScreen.tsx:384`<br>`screens/PaymentNativeScreens.tsx:1701`<br>+5 more |
+| `#F3F4F6` | 10 | Surface alt | `constants/theme.ts:9`<br>`screens/ExamNativeScreen.tsx:1020`<br>`screens/LearningNativeScreens.tsx:1143`<br>`screens/PaymentNativeScreens.tsx:1875`<br>`screens/PaymentNativeScreens.tsx:2050`<br>`screens/PerformanceNativeScreens.tsx:1049`<br>`screens/PerformanceNativeScreens.tsx:1260`<br>`screens/PerformanceNativeScreens.tsx:1266`<br>+2 more |
+| `#F59E0B` | 1 | Warning | `screens/TestResultNativeScreen.tsx:16` |
+| `#F9FAFB` | 7 | Background | `constants/theme.ts:7`<br>`constants/theme.ts:37`<br>`screens/PaymentNativeScreens.tsx:2039`<br>`screens/PdfViewerScreen.tsx:50`<br>`screens/PerformanceNativeScreens.tsx:1256`<br>`screens/PerformanceNativeScreens.tsx:1395`<br>`screens/PerformanceNativeScreens.tsx:1567` |
+| `#FCD34D` | 1 | Replace with the nearest semantic theme token | `screens/PaymentNativeScreens.tsx:2067` |
+| `#FDE68A` | 1 | Replace with the nearest semantic theme token | `components/SubscriptionBottomSheet.tsx:1826` |
+| `#FDE8E8` | 6 | Error surface | `components/PdfDocumentIcon.tsx:41`<br>`constants/theme.ts:20`<br>`constants/theme.ts:43`<br>`constants/theme.ts:49`<br>`screens/LearningNativeScreens.tsx:1135`<br>`screens/PerformanceNativeScreens.tsx:1482` |
+| `#FEF3C7` | 2 | Replace with the nearest semantic theme token | `components/SubscriptionBottomSheet.tsx:1821`<br>`screens/PaymentNativeScreens.tsx:2065` |
 | `#FFCC00` | 1 | Approved MTN provider mark | `constants/theme.ts:28` |
 | `#FFFBEB` | 2 | Warning surface | `constants/theme.ts:18`<br>`constants/theme.ts:45` |
-| `#FFFFFF` | 31 | Surface / white | `components/BottomNavBar.tsx:170`<br>`components/PdfDocumentIcon.tsx:23`<br>`components/PdfDocumentIcon.tsx:27`<br>`constants/theme.ts:8`<br>`constants/theme.ts:23`<br>`screens/AuthScreens.tsx:427`<br>`screens/AuthScreens.tsx:624`<br>`screens/AuthScreens.tsx:822`<br>+23 more |
-| `RGBA(0,0,0,0.05)` | 2 | Subtle technical border/shadow transparency | `components/LanguageOptionCard.tsx:84`<br>`screens/PaymentNativeScreens.tsx:1641` |
-| `RGBA(107, 114, 128, 0.22)` | 1 | PDF watermark transparency | `screens/PdfViewerScreen.tsx:52` |
-| `RGBA(15, 23, 42, 0.08)` | 1 | PDF rendering shadow transparency | `screens/PdfViewerScreen.tsx:53` |
-| `RGBA(15, 23, 42, 0.45)` | 2 | Modal/media overlay transparency | `screens/PaymentNativeScreens.tsx:1904`<br>`screens/PaymentNativeScreens.tsx:1996` |
-| `RGBA(15, 23, 42, 0.62)` | 1 | Modal overlay transparency | `screens/ExamNativeScreen.tsx:670` |
+| `#FFFFFF` | 49 | Surface / white | `components/BottomNavBar.tsx:198`<br>`components/PdfDocumentIcon.tsx:23`<br>`components/PdfDocumentIcon.tsx:27`<br>`components/SubscriptionBottomSheet.tsx:1108`<br>`components/SubscriptionBottomSheet.tsx:1177`<br>`components/SubscriptionBottomSheet.tsx:1311`<br>`components/SubscriptionBottomSheet.tsx:1314`<br>`components/SubscriptionBottomSheet.tsx:1686`<br>+41 more |
+| `RGBA(0,0,0,0.05)` | 2 | Subtle technical border/shadow transparency | `components/LanguageOptionCard.tsx:84`<br>`screens/PaymentNativeScreens.tsx:1660` |
+| `RGBA(0,0,0,0.5)` | 1 | Replace with a semantic token or retain only for modal/media overlays | `components/SubscriptionBottomSheet.tsx:2129` |
+| `RGBA(107, 114, 128, 0.22)` | 1 | PDF watermark transparency | `screens/PdfViewerScreen.tsx:54` |
+| `RGBA(15, 23, 42, 0.08)` | 1 | PDF rendering shadow transparency | `screens/PdfViewerScreen.tsx:55` |
+| `RGBA(15, 23, 42, 0.45)` | 3 | Modal/media overlay transparency | `screens/PaymentNativeScreens.tsx:1914`<br>`screens/PaymentNativeScreens.tsx:2006`<br>`screens/PaymentNativeScreens.tsx:2107` |
+| `RGBA(15, 23, 42, 0.48)` | 1 | Replace with a semantic token or retain only for modal/media overlays | `screens/ProfileNativeScreen.tsx:584` |
+| `RGBA(15, 23, 42, 0.62)` | 1 | Modal overlay transparency | `screens/ExamNativeScreen.tsx:677` |
 | `RGBA(15, 23, 42, 0.65)` | 1 | Modal overlay transparency | `components/SignOutConfirmationModal.tsx:67` |
+| `RGBA(17, 24, 39, 0.55)` | 1 | Replace with a semantic token or retain only for modal/media overlays | `components/SubscriptionBottomSheet.tsx:1549` |
+| `RGBA(17, 24, 39, 0.65)` | 1 | Replace with a semantic token or retain only for modal/media overlays | `components/SubscriptionBottomSheet.tsx:1978` |
 | `RGBA(17,24,39,0.12)` | 1 | Theme overlay soft token | `constants/theme.ts:26` |
 | `RGBA(17,24,39,0.48)` | 1 | Theme overlay token | `constants/theme.ts:25` |
-| `RGBA(20,33,58,0.22)` | 1 | Modal overlay transparency | `screens/VideoCourseListScreen.tsx:322` |
-| `RGBA(20,33,58,0.42)` | 1 | Media overlay transparency | `screens/VideoCoursePlayerScreen.tsx:387` |
-| `RGBA(221,226,234,0.92)` | 1 | Exam modal border transparency | `screens/ExamNativeScreen.tsx:682` |
-| `RGBA(23, 34, 56, 0.46)` | 1 | Road-sign modal overlay transparency | `screens/LearningNativeScreens.tsx:931` |
-| `RGBA(249,250,251,0.86)` | 1 | Floating nav frosted shelf transparency | `context/GateModalContext.tsx:174` |
-| `RGBA(255,255,255,0.12)` | 2 | Header/card surface transparency | `screens/ExamNativeScreen.tsx:753`<br>`screens/ExamNativeScreen.tsx:833` |
-| `RGBA(255,255,255,0.13)` | 1 | Header/card surface transparency | `screens/PerformanceNativeScreens.tsx:1073` |
-| `RGBA(255,255,255,0.14)` | 2 | Header/card surface transparency | `components/HeaderMenu.tsx:123`<br>`screens/HomeNativeScreen.tsx:543` |
-| `RGBA(255,255,255,0.16)` | 5 | Header/card surface transparency | `components/ProgressRing.tsx:37`<br>`screens/HomeNativeScreen.tsx:487`<br>`screens/PerformanceNativeScreens.tsx:714`<br>`screens/PracticeNativeScreen.tsx:162`<br>`screens/VideoCoursePlayerScreen.tsx:408` |
-| `RGBA(255,255,255,0.2)` | 3 | Replace with a semantic token or retain only for modal/media overlays | `screens/PaymentNativeScreens.tsx:596`<br>`screens/PaymentNativeScreens.tsx:601`<br>`screens/PaymentNativeScreens.tsx:610` |
-| `RGBA(255,255,255,0.22)` | 2 | Header/card surface transparency | `screens/PaymentNativeScreens.tsx:1623`<br>`screens/PerformanceNativeScreens.tsx:1075` |
-| `RGBA(255,255,255,0.25)` | 1 | Media card border transparency | `screens/VideoCoursePlayerScreen.tsx:410` |
-| `RGBA(255,255,255,0.4)` | 4 | Replace with a semantic token or retain only for modal/media overlays | `screens/PaymentNativeScreens.tsx:597`<br>`screens/PaymentNativeScreens.tsx:600`<br>`screens/PaymentNativeScreens.tsx:609`<br>`screens/PaymentNativeScreens.tsx:616` |
+| `RGBA(20,33,58,0.22)` | 1 | Modal overlay transparency | `screens/VideoCourseListScreen.tsx:326` |
+| `RGBA(20,33,58,0.42)` | 1 | Media overlay transparency | `screens/VideoCoursePlayerScreen.tsx:391` |
+| `RGBA(221,226,234,0.92)` | 1 | Exam modal border transparency | `screens/ExamNativeScreen.tsx:689` |
+| `RGBA(23, 34, 56, 0.46)` | 1 | Road-sign modal overlay transparency | `screens/LearningNativeScreens.tsx:973` |
+| `RGBA(249,250,251,0.86)` | 1 | Floating nav frosted shelf transparency | `context/GateModalContext.tsx:177` |
+| `RGBA(255, 255, 255, 0.2)` | 1 | Replace with a semantic token or retain only for modal/media overlays | `components/SubscriptionBottomSheet.tsx:1730` |
+| `RGBA(255, 255, 255, 0.22)` | 1 | Replace with a semantic token or retain only for modal/media overlays | `components/SubscriptionBottomSheet.tsx:1677` |
+| `RGBA(255, 255, 255, 0.85)` | 2 | Replace with a semantic token or retain only for modal/media overlays | `components/SubscriptionBottomSheet.tsx:1704`<br>`components/SubscriptionBottomSheet.tsx:1724` |
+| `RGBA(255,255,255,0.12)` | 1 | Header/card surface transparency | `screens/ExamNativeScreen.tsx:839` |
+| `RGBA(255,255,255,0.13)` | 1 | Header/card surface transparency | `screens/PerformanceNativeScreens.tsx:1289` |
+| `RGBA(255,255,255,0.14)` | 2 | Header/card surface transparency | `components/HeaderMenu.tsx:123`<br>`screens/HomeNativeScreen.tsx:457` |
+| `RGBA(255,255,255,0.16)` | 5 | Header/card surface transparency | `components/ProgressRing.tsx:37`<br>`screens/HomeNativeScreen.tsx:428`<br>`screens/PerformanceNativeScreens.tsx:818`<br>`screens/PracticeNativeScreen.tsx:162`<br>`screens/VideoCoursePlayerScreen.tsx:412` |
+| `RGBA(255,255,255,0.2)` | 6 | Replace with a semantic token or retain only for modal/media overlays | `components/SubscriptionBottomSheet.tsx:1516`<br>`components/SubscriptionBottomSheet.tsx:1519`<br>`components/SubscriptionBottomSheet.tsx:1523`<br>`screens/PaymentNativeScreens.tsx:742`<br>`screens/PaymentNativeScreens.tsx:747`<br>`screens/PaymentNativeScreens.tsx:756` |
+| `RGBA(255,255,255,0.22)` | 2 | Header/card surface transparency | `screens/PaymentNativeScreens.tsx:1634`<br>`screens/PerformanceNativeScreens.tsx:1291` |
+| `RGBA(255,255,255,0.25)` | 1 | Media card border transparency | `screens/VideoCoursePlayerScreen.tsx:414` |
+| `RGBA(255,255,255,0.4)` | 6 | Replace with a semantic token or retain only for modal/media overlays | `components/SubscriptionBottomSheet.tsx:1518`<br>`components/SubscriptionBottomSheet.tsx:1522`<br>`screens/PaymentNativeScreens.tsx:743`<br>`screens/PaymentNativeScreens.tsx:746`<br>`screens/PaymentNativeScreens.tsx:755`<br>`screens/PaymentNativeScreens.tsx:762` |
+| `RGBA(255,255,255,0.82)` | 1 | Replace with a semantic token or retain only for modal/media overlays | `screens/CertificateNativeScreen.tsx:444` |
 
 ## Follow-up Rule
 

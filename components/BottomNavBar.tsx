@@ -8,6 +8,7 @@ import { RootStackParamList } from '../navigation/types';
 import { MIN_TOUCH_TARGET } from '../constants/accessibility';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { useI18n } from '../i18n/useI18n';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { hasExamAccess, hasReadingAccess, hasVideoAccess } from '../utils/subscriptionAccess';
@@ -64,6 +65,7 @@ export function BottomNavBar({ navigation, active, onPressTab }: BottomNavBarPro
   const { t } = useI18n();
   const { hasSubscription, canTakeExams, hasReadingAccess: readingEntitlement, hasVideoAccess: videoEntitlement, canChangeLanguage, subscriptionLanguage, contentLanguage, isSigningOut } = useAppFlow();
   const { openGateModal } = useGateModal();
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const activeKey = active ?? resolveActive(route.name);
   const isCompact = shortSide <= 360;
   const isWidePhone = shortSide >= 412;
@@ -111,7 +113,7 @@ export function BottomNavBar({ navigation, active, onPressTab }: BottomNavBarPro
     }
     if (navigation) {
       if (tab === 'exam' && !isSigningOut && !examAccessGranted) {
-        openGateModal('subscription_exam', () => (navigation as any).navigate('SubscriptionNative'));
+        openGateModal('subscription_exam', () => openSubscriptionSheet());
         return;
       }
 
@@ -121,11 +123,11 @@ export function BottomNavBar({ navigation, active, onPressTab }: BottomNavBarPro
       }
 
       if (tab === 'read' && !readingAccessGranted && !isSigningOut) {
-        openGateModal('subscription_read', () => (navigation as any).navigate('SubscriptionNative'));
+        openGateModal('subscription_read', () => openSubscriptionSheet());
         return;
       }
       if (tab === 'watch' && !videoAccessGranted && !isSigningOut) {
-        openGateModal('subscription_watch', () => (navigation as any).navigate('SubscriptionNative'));
+        openGateModal('subscription_watch', () => openSubscriptionSheet());
         return;
       }
       (navigation as any).navigate(routeName);

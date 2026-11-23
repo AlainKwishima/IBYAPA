@@ -14,6 +14,7 @@ import { SectionHeading } from '../components/SectionHeading';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n/useI18n';
 import { hasExamAccess, hasReadingAccess, hasVideoAccess } from '../utils/subscriptionAccess';
@@ -85,6 +86,7 @@ export function HomeNativeScreen({ navigation }: Props) {
   const { tabScrollBottomPad } = useResponsiveLayout();
   const { accessToken, userId, name } = useAuth();
   const { openGateModal } = useGateModal();
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const {
     hasUsedFreeTrial,
     hasSubscription,
@@ -192,7 +194,7 @@ export function HomeNativeScreen({ navigation }: Props) {
   const handleLearningRoute = (route: LearningRoute) => {
     if (route === 'ExamInstructionsNative') {
       if (!isSigningOut && !examAccessGranted) {
-        openGateModal('subscription_exam', () => navigation.navigate('SubscriptionNative'));
+        openGateModal('subscription_exam', () => openSubscriptionSheet());
         return;
       }
       navigation.navigate(route);
@@ -200,13 +202,11 @@ export function HomeNativeScreen({ navigation }: Props) {
     }
 
     if (route === 'ReadingNative' && !readingAccessGranted && !isSigningOut) {
-      openGateModal('subscription_read', () =>
-        navigation.navigate('SubscriptionNative'),
-      );
+      openGateModal('subscription_read', () => openSubscriptionSheet());
       return;
     }
     if (route === 'VideoCourseList' && !videoAccessGranted && !isSigningOut) {
-      openGateModal('subscription_watch', () => navigation.navigate('SubscriptionNative'));
+      openGateModal('subscription_watch', () => openSubscriptionSheet());
       return;
     }
     navigation.navigate(route);

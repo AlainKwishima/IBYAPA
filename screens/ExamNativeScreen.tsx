@@ -21,6 +21,7 @@ import { SkeletonBlock } from '../components/RequestStates';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useAuth } from '../context/AuthContext';
 import { useGateModal } from '../context/GateModalContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { getExamQuestions, getSignQuestions, type TrafficQuestion } from '../services/trafficApi';
 import { appendLocalExamRecord } from '../services/examHistoryStorage';
 import { savePerformance } from '../services/performanceApi';
@@ -145,6 +146,7 @@ export function ExamNativeScreen({ navigation, route }: Props) {
   } = useAppFlow();
   const { accessToken, userId } = useAuth();
   const { openGateModal } = useGateModal();
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const mode = route.params?.mode ?? 'traffic';
   const examLanguage = resolveExamLanguage({
     hasSubscription,
@@ -203,7 +205,10 @@ export function ExamNativeScreen({ navigation, route }: Props) {
       if (!isSigningOut) {
         openGateModal(
           'subscription_exam',
-          () => navigation.replace('SubscriptionNative'),
+          () => {
+            navigation.replace('HomeNative');
+            openSubscriptionSheet();
+          },
           () => navigation.replace('HomeNative'),
         );
       }

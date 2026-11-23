@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { RootStackParamList } from '../navigation/types';
 import { hasExamAccess, hasReadingAccess, hasVideoAccess } from '../utils/subscriptionAccess';
 import { colors } from '../constants/theme';
@@ -23,6 +24,7 @@ export function StartExamNativeScreen({ navigation, route }: Props) {
     isSigningOut,
   } = useAppFlow();
   const { openGateModal } = useGateModal();
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const examAccessGranted = hasExamAccess({
     hasSubscription,
     canTakeExams,
@@ -79,7 +81,8 @@ export function StartExamNativeScreen({ navigation, route }: Props) {
         kind,
         () => {
           if (kind === 'subscription_exam' || kind === 'subscription_read' || kind === 'subscription_watch') {
-            navigation.replace('SubscriptionNative');
+            navigation.replace('HomeNative');
+            openSubscriptionSheet();
             return;
           }
           if (gateFor === 'read') {

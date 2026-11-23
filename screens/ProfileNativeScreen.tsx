@@ -12,6 +12,7 @@ import { AppHeader } from '../components/AppHeader';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useAuth } from '../context/AuthContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { useI18n } from '../i18n/useI18n';
 import { SignOutConfirmationModal } from '../components/SignOutConfirmationModal';
 import { colors, radii, spacing, typography } from '../constants/theme';
@@ -63,6 +64,7 @@ export function ProfileNativeScreen({ navigation }: Props) {
   const { tabScrollBottomPad, scale, verticalScale, radius } = useResponsiveLayout();
   const { t } = useI18n();
   const { name, phone, logout, updateProfile, accessToken, subscriptionSummary } = useAuth();
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const [showSignOutConfirm, setShowSignOutConfirm] = React.useState(false);
   const [showEditProfile, setShowEditProfile] = React.useState(false);
   const [editName, setEditName] = React.useState(name ?? '');
@@ -208,7 +210,7 @@ export function ProfileNativeScreen({ navigation }: Props) {
             </AppText>
             <TouchableOpacity
               style={styles.editProfileIconButton}
-              onPress={() => navigation.navigate('SubscriptionNative')}
+              onPress={() => openSubscriptionSheet()}
               activeOpacity={0.78}
               accessibilityRole="button"
               accessibilityLabel={t('profile.edit')}
@@ -219,7 +221,7 @@ export function ProfileNativeScreen({ navigation }: Props) {
           <TouchableOpacity
             style={styles.subscriptionCard}
             activeOpacity={0.86}
-            onPress={() => navigation.navigate('SubscriptionNative')}
+            onPress={() => openSubscriptionSheet()}
           >
             <View style={styles.subscriptionTop}>
               <View style={styles.subscriptionIcon}>

@@ -18,6 +18,7 @@ import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAuth } from '../context/AuthContext';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { getPdfsWithFallback, type PdfItem } from '../services/contentApi';
 import { getRoadSigns, markRoadSignViewed, type RoadSignStudyItem } from '../services/roadSignsApi';
 import { ApiError } from '../services/api/types';
@@ -329,6 +330,7 @@ export function ReadingNativeScreen({ navigation, route }: ReadProps) {
     isSigningOut,
   } = useAppFlow();
   const { openGateModal } = useGateModal();
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const [activeTab, setActiveTab] = useState<ReadTab>(route.params?.initialTab ?? 'documents');
   const [failedRoadSignImages, setFailedRoadSignImages] = useState<Record<string, boolean>>({});
   const [selectedRoadSignIndex, setSelectedRoadSignIndex] = useState<number | null>(null);
@@ -384,7 +386,7 @@ export function ReadingNativeScreen({ navigation, route }: ReadProps) {
 
   useEffect(() => {
     if (!readingAccessGranted && !isSigningOut) {
-      openGateModal('subscription_read', () => navigation.navigate('SubscriptionNative'));
+      openGateModal('subscription_read', () => openSubscriptionSheet());
     }
   }, [isSigningOut, navigation, openGateModal, readingAccessGranted]);
 

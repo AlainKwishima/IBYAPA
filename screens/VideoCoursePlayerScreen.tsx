@@ -17,6 +17,7 @@ import { LoadingState } from '../components/RequestStates';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAppFlow } from '../context/AppFlowContext';
 import { useGateModal } from '../context/GateModalContext';
+import { useSubscriptionSheet } from '../context/SubscriptionSheetContext';
 import { hasVideoAccess } from '../utils/subscriptionAccess';
 import { extractYouTubeId } from '../utils/videoLinks';
 import { colors, radii, shadows, spacing, typography } from '../constants/theme';
@@ -173,6 +174,7 @@ export function VideoCoursePlayerScreen({ navigation, route }: Props) {
     isSigningOut,
   } = useAppFlow();
   const { openGateModal } = useGateModal();
+  const { openSubscriptionSheet } = useSubscriptionSheet();
   const videoAccessGranted = hasVideoAccess({
     hasSubscription,
     hasVideoAccess: videoEntitlement,
@@ -202,7 +204,7 @@ export function VideoCoursePlayerScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     if (!videoAccessGranted && !isSigningOut) {
-      openGateModal('subscription_watch', () => navigation.navigate('SubscriptionNative'));
+      openGateModal('subscription_watch', () => openSubscriptionSheet());
     }
   }, [isSigningOut, navigation, openGateModal, videoAccessGranted]);
 

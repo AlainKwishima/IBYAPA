@@ -30,7 +30,7 @@ import { CertificateNativeScreen } from './screens/CertificateNativeScreen';
 import { CertificateWebViewerScreen } from './screens/CertificateWebViewerScreen';
 import { CertificatePaymentNativeScreen } from './screens/CertificatePaymentNativeScreen';
 import { HelpCenterNativeScreen } from './screens/LearningNativeScreens';
-import { PaymentNativeScreen, SubscriptionNativeScreen } from './screens/PaymentNativeScreens';
+import { PaymentNativeScreen } from './screens/PaymentNativeScreens';
 import { ProfileNativeScreen } from './screens/ProfileNativeScreen';
 import { RootStackParamList } from './navigation/types';
 import { ReferenceImageScreen } from './screens/ReferenceImageScreen';
@@ -46,6 +46,7 @@ import { ReadingNativeScreen } from './screens/LearningNativeScreens';
 import { AppFlowProvider, useAppFlow } from './context/AppFlowContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GateModalProvider } from './context/GateModalContext';
+import { SubscriptionSheetProvider } from './context/SubscriptionSheetContext';
 import { NetworkStatusProvider } from './context/NetworkStatusContext';
 import { OfflineBanner } from './components/OfflineBanner';
 import { FullScreenErrorBoundary } from './components/FullScreenErrorBoundary';
@@ -138,7 +139,7 @@ function RootNavigator() {
         <Stack.Screen name="PerformanceReviewNative" component={PerformanceReviewNativeScreen} />
         <Stack.Screen name="ReadingNative" component={ReadingNativeScreen} options={mainTabScreenOptions} />
         <Stack.Screen name="HelpCenterNative" component={HelpCenterNativeScreen} />
-        <Stack.Screen name="SubscriptionNative" component={SubscriptionNativeScreen} />
+
         <Stack.Screen name="PaymentNative" component={PaymentNativeScreen} />
         <Stack.Screen name="ProfileNative" component={ProfileNativeScreen} />
         <Stack.Screen name="ScreensHub" component={ScreensHubScreen} />
@@ -172,14 +173,16 @@ export default function App() {
         <AppFlowProvider>
           <NetworkStatusProvider>
             <AuthProvider>
-              <GateModalProvider>
+              <SubscriptionSheetProvider>
+                <GateModalProvider>
                 <FullScreenErrorBoundary>
                   <View style={styles.app}>
                     <OfflineBanner />
                     <RootNavigator />
                   </View>
                 </FullScreenErrorBoundary>
-              </GateModalProvider>
+                </GateModalProvider>
+              </SubscriptionSheetProvider>
             </AuthProvider>
           </NetworkStatusProvider>
         </AppFlowProvider>

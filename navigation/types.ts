@@ -75,7 +75,7 @@ export type RootStackParamList = {
     | undefined;
   ReadingNative: { initialTab?: 'documents' | 'signs' } | undefined;
   HelpCenterNative: undefined;
-  SubscriptionNative: undefined;
+
   PaymentNative:
     | {
         planTitle?: string;
